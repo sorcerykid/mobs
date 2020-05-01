@@ -124,8 +124,8 @@ local function node_locator( pos, size, time, color )
 	if is_debug then
 		minetest.add_particle( {
 			pos = pos,
-			vel = { x=0, y=0, z=0 },
-			acc = { x=0, y=0, z=0 },
+			velocity = { x=0, y=0, z=0 },
+			acceleration = { x=0, y=0, z=0 },
 			exptime = time + 4,
 			size = size,
 			collisiondetection = false,
@@ -714,7 +714,7 @@ mobs.register_mob = function ( name, def )
 			end
 
 			if cycles % 2 == 0 then
-				if self:get_target_yaw_delta( target_pos ) > rad_45 or random( 5 ) == 1 then
+				if self:get_target_yaw_delta( target_pos ) > rad_45 then
 					self:turn_to( self:get_target_yaw( target_pos, rad_20 ), 10 )
 				end
 			end
@@ -923,9 +923,11 @@ mobs.register_mob = function ( name, def )
 			local hp = self.object:get_hp( )
 			local node = minetest.get_node_above( self.pos, 0.5 )
 			local time_of_day = minetest.get_timeofday( )
+
+			if node.name == "ignore" then return end  -- mapblock is not loaded, so abort!
 				
 			if self.light_damage and self.light_damage > 0 and self.pos.y > 0 and
-					minetest.get_node_light( self.pos ) > 4 and time_of_day > 0.2 and time_of_day < 0.8 then
+					minetest.get_node_light( self.pos ) > 4 and check_limits( time_of_day, 0.2, 0.8 ) then
 				hp = hp - self.light_damage
 				self.object:set_hp( hp )
 				if hp <= 0 then
@@ -987,10 +989,10 @@ mobs.register_mob = function ( name, def )
 
 		-- generic callbacks --
 		
-		on_step = function( self, dtime, pos, yaw, new_vel, old_vel, move_result )
+		on_step = function( self, dtime, pos, rot, new_vel, old_vel, move_result )
 			self.pos = pos
-			self.yaw = yaw
-				self.new_vel = new_vel
+			self.yaw = rot.Y
+			self.new_vel = new_vel
 			self.move_result = move_result
 
 			local hp = self.object:get_hp( )
