@@ -1258,7 +1258,7 @@ mobs.register_projectile = function ( name, def )
 			self.trail_effect.vel_x = -sin( yaw + self.trail_effect.angle ) * self.trail_effect.speed
 			self.trail_effect.vel_z = cos( yaw + self.trail_effect.angle ) * self.trail_effect.speed
 
-			minetest.sound_play( self.sounds.launch, { object = self.object, gain = 1, max_hear_distance = 16 } )
+			minetest.sound_play( self.sounds.launch, { object = self.object, gain = 1 } )
 		end,
 
 		on_activate = function( self, staticdata, dtime_s )
@@ -1296,7 +1296,7 @@ mobs.register_projectile = function ( name, def )
 			end
 
 			if move_result.is_swimming and not self.is_swimming then
-				minetest.sound_play( self.sounds.submerge, { object = self.object, gain = 1, max_hear_distance = 16 } )
+				minetest.sound_play( self.sounds.submerge, { object = self.object, gain = 1 } )
 				if not self.can_submerge then
 					self.object:remove( )
 				end
@@ -1313,7 +1313,7 @@ mobs.register_projectile = function ( name, def )
 					self:on_impact_nodes( pos, old_vel, move_result.collisions )
 				end
 
-				minetest.sound_play( self.sounds.impact, { object = self.object, gain = 1, max_hear_distance = 16 } )
+				minetest.sound_play( self.sounds.impact, { object = self.object, gain = 1 } )
 				self.object:remove( )
 			end
 		end
