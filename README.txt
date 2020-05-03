@@ -36,8 +36,11 @@ Here are some of the other highlights of the Mobs Lite engine:
  * Mobs can be randomly spawned in the vicinity of players, thus relieving the overhead of 
    costly ABM-based spawners.
 
- * Timekeeper helper class ensures efficient dispatching of mob-related callbacks for the
+ * Timekeeper helper class ensures efficient dispatching of mob-related callbacks at the
    appropriate server cycle.
+
+ * Animals can be programmed to follow players or to grab items that are wielded by or 
+   dropped by nearby players.
 
  * And of course, much much more!
 

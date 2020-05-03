@@ -48,21 +48,19 @@ mobs.register_mob( "mobs:kitten", {
 	run_velocity = 1.2,
 	escape_range = 3.0,
 	follow_range = 2.0,
+	pickup_range = 2.0,
 	can_jump = false,
 	can_walk = true,
 	enable_fall_damage = true,
 
 	watch_wielditems = {
-		["mobs:meat_raw"] = "follow",
-		["mobs:meat"] = "follow",
+		["mobs:meat_raw"] = mobs.presets.grab_handout { can_eat = true, grab_chance = 8, wait_chance = 1 },
 	},
 	watch_spawnitems = {
-		["mobs:meat_raw"] = "follow",
-		["mobs:meat"] = "follow",
+		["mobs:meat_raw"] = mobs.presets.grab_handout { can_eat = true, grab_chance = 1, wait_chance = 2 },
 	},
 	watch_players = { },
 
-	hunger = 5,
 	hp_max = 4,
 	hp_low = 3,
 	armor = 100,
@@ -145,17 +143,16 @@ mobs.register_mob( "mobs:rat", {
 	run_velocity = 1.2,
 	escape_range = 0.0,
 	follow_range = 2.0,
+	pickup_range = 2.0,
 	can_jump = false,
 	can_walk = true,
 	enable_fall_damage = true,
 
 	watch_wielditems = {
-		["mobs:meat_raw"] = "follow",
 		["mobs:meat"] = "follow",
 	},
 	watch_spawnitems = {
-		["mobs:meat_raw"] = "follow",
-		["mobs:meat"] = "follow",
+		["mobs:meat"] = mobs.presets.grab_handout { can_eat = true, grab_chance = 2, wait_chance = 4 },
 	},
 	watch_players = { },
 
@@ -229,15 +226,17 @@ mobs.register_mob( "mobs:hare", {
 	run_velocity = 3.5,
 	escape_range = 3.0,
 	follow_range = 3.0,
+	pickup_range = 2.0,
 	can_jump = true,
 	can_walk = true,
 	enable_fall_damage = true,
 
 	watch_wielditems = {
-		["default:apple"] = "follow",
-		["default:orange"] = "follow",
+		["default:apple"] =  "follow",
 	},
-	watch_spawnitems = { },
+	watch_spawnitems = {
+		["default:apple"] = mobs.presets.grab_handout { can_eat = true, grab_chance = 2, wait_chance = 5 },
+	},
 	watch_players = { },
 
 	hp_max = 4,
@@ -320,19 +319,20 @@ mobs.register_mob( "mobs:chicken", {
 	recoil_velocity = 2.0,
 	run_velocity = 2.0,
 	follow_range = 3.0,
+	pickup_range = 2.0,
 	escape_range = 3.0,
 	can_jump = true,
 	can_walk = true,
 	enable_fall_damage = true,
 
 	watch_wielditems = {
-		["default:apple"] = "follow",
-		["default:orange"] = "follow",
+		["farming:seed_wheat"] = mobs.presets.grab_handout { can_eat = true, grab_chance = 1, wait_chance = 1 },
 	},
-	watch_spawnitems = { },
+	watch_spawnitems = {
+		["farming:seed_wheat"] = mobs.presets.grab_handout { can_eat = true, grab_chance = 2, wait_chance = 4 },
+	},
 	watch_players = { },
 
-	hunger = 10,
 	hp_max = 10,
 	hp_low = 9,
 	armor = 100,

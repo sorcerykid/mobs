@@ -1389,6 +1389,53 @@ end
 
 --------------------
 
+mobs.presets = {
+	grab_handout = function ( def )
+		local grab_chance = def.grab_chance
+		local wait_chance = def.wait_chance
+		local can_eat = def.can_eat
+
+		return function ( self, target, elapsed )
+
+			if random( grab_chance ) == 1 then
+				local target_pos = vector.offset_y( target:get_pos( ) )
+				local dist = vector.distance( self.pos, target_pos )
+
+				if self:get_target_yaw_delta( target_pos ) < rad_30 and dist <= self.pickup_range then
+					if target:is_player( ) then
+						target:get_wielded_item( ):take_item( )
+						target:set_wielded_item( "" )
+					elseif target:get_entity_name( ) == "__builtin:item" then
+						target:remove( )
+					end
+					if can_eat then
+					--	minetest.sound_play( "hbhunger_eat_generic", {
+					--		object = self.object,
+					--		max_hear_distance = 10,
+					--		gain = 1.0
+					--	} )
+						minetest.add_particle( {
+							pos = vector.offset_y( self.pos, 0.5 ),
+							velocity = { x = 0, y = 0.8, z = 0 },
+							acceleration = { x = 0, y = 0, z = 0 },
+							exptime = 4.0,
+							size = 3,
+							collisiondetection = false,
+							vertical = true,
+							texture = "heart.png",
+						} )
+					end
+					return nil
+				end
+			end
+
+			return random( wait_chance ) == 1 and "follow" or nil
+		end
+	end,
+}
+
+--------------------
+
 dofile( minetest.get_modpath( "mobs" ) .. "/extras.lua" )
 dofile( minetest.get_modpath( "mobs" ) .. "/monsters.lua" )
 dofile( minetest.get_modpath( "mobs" ) .. "/animals.lua" )
@@ -1397,5 +1444,5 @@ dofile( minetest.get_modpath( "mobs" ) .. "/weapons.lua" )
 -- compatibility for Minetest S3 engine
 
 if not vector.origin then
-        dofile( minetest.get_modpath( "mobs" ) .. "/compatibility.lua" )
+	dofile( minetest.get_modpath( "mobs" ) .. "/compatibility.lua" )
 end
