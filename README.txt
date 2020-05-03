@@ -1,10 +1,49 @@
-Mobs Lite Mod v1.0
+Mobs Lite Mod v1.1
 By Leslie E. Krause
 
 Mobs Lite is a fully-working proof of concept for the Extended Motion Mechanics API for
 LuaEntity SAO's, and it requires installing the following patch for Minetest 5.3-dev:
 
-https://github.com/minetest/minetest/pull/9717
+   https://github.com/minetest/minetest/pull/9717
+
+While originally forked from PilzAdam's "Simple Mobs" mod several years ago, Mobs Lite has 
+been effectively written from scratch. Most of the core architecture is derived from my 
+Avatars mod, albeit a much leaner design.
+
+Here are some of the other highlights of the Mobs Lite engine:
+
+ * Extremely lightweight design thanks to the new API (no more continuous collision checks 
+   and velocity resets).
+
+ * Realistic fluid mechanics such as density and viscosity so that creatures have varying 
+   buoyancy characteristics.
+
+ * Sophisticated sensory analysis with a custom view-cone and acuity curve dependant on 
+   changing awareness level.
+
+ * Sensitivity thresholds and certainty factors determine whether creatures "see" a player 
+   within their view cone.
+
+ * Animals will attempt to flee to safety when a player that previously punched them 
+   returns to the field of view.
+
+ * Monsters no longer randomly attack but rather exhibit varying degrees of aggression via 
+   a Perlin noise function.
+
+ * Creatures avoid running into most obstacles by analyzing the surroundings and steadily
+   changing their course.
+
+ * Mobs can be randomly spawned in the vicinity of players, thus relieving the overhead of 
+   ABM-based spawners.
+
+ * Specialized Timekeeper class ensures efficient dispatching of mob-related callbacks for 
+   each globalstep cycle.
+
+ * And of course, much much more!
+
+Since Mobs Lite is still in early beta, there is the likelihood of lingering bugs. The API
+is also subject to change. I'm actively using this mod on my own server, however. So when 
+new issues are discovered or reported, they will be promptly fixed :)
 
 
 Repository
