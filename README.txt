@@ -34,10 +34,10 @@ Here are some of the other highlights of the Mobs Lite engine:
    changing their course.
 
  * Mobs can be randomly spawned in the vicinity of players, thus relieving the overhead of 
-   ABM-based spawners.
+   costly ABM-based spawners.
 
- * Specialized Timekeeper class ensures efficient dispatching of mob-related callbacks for 
-   each globalstep cycle.
+ * Timekeeper helper class ensures efficient dispatching of mob-related callbacks for the
+   appropriate server cycle.
 
  * And of course, much much more!
 

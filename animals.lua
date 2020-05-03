@@ -56,6 +56,10 @@ mobs.register_mob( "mobs:kitten", {
 		["mobs:meat_raw"] = "follow",
 		["mobs:meat"] = "follow",
 	},
+	watch_spawnitems = {
+		["mobs:meat_raw"] = "follow",
+		["mobs:meat"] = "follow",
+	},
 	watch_players = { },
 
 	hunger = 5,
@@ -149,6 +153,10 @@ mobs.register_mob( "mobs:rat", {
 		["mobs:meat_raw"] = "follow",
 		["mobs:meat"] = "follow",
 	},
+	watch_spawnitems = {
+		["mobs:meat_raw"] = "follow",
+		["mobs:meat"] = "follow",
+	},
 	watch_players = { },
 
 	hp_max = 2,
@@ -229,6 +237,7 @@ mobs.register_mob( "mobs:hare", {
 		["default:apple"] = "follow",
 		["default:orange"] = "follow",
 	},
+	watch_spawnitems = { },
 	watch_players = { },
 
 	hp_max = 4,
@@ -320,6 +329,7 @@ mobs.register_mob( "mobs:chicken", {
 		["default:apple"] = "follow",
 		["default:orange"] = "follow",
 	},
+	watch_spawnitems = { },
 	watch_players = { },
 
 	hunger = 10,

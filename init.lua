@@ -9,8 +9,11 @@
 
 mobs = { }
 
-local source_list = { }
-local connected_players = { }
+local registry = {
+	players = { },
+	avatars = { },
+	spawnitems = { },
+}
 
 world_gravity = -10
 liquid_density = 0.5
@@ -124,8 +127,8 @@ local function node_locator( pos, size, time, color )
 	if is_debug then
 		minetest.add_particle( {
 			pos = pos,
-			velocity = { x=0, y=0, z=0 },
-			acceleration = { x=0, y=0, z=0 },
+			vel = { x=0, y=0, z=0 },
+			acc = { x=0, y=0, z=0 },
 			exptime = time + 4,
 			size = size,
 			collisiondetection = false,
@@ -201,24 +204,48 @@ end
 
 --------------------
 
-minetest.register_on_joinplayer( function( player )
-	local name = player:get_player_name( )
-
-	connected_players[ name ] = player  -- maintain our own lookup table for efficiency
-end )
-
 minetest.register_on_leaveplayer( function( player, is_timeout )
 	local name = player:get_player_name( )
 
 	-- delete all target references (if applicable)
-	for id, this in pairs( source_list ) do
+	for id, this in pairs( registry.avatars ) do
 		if this.target == player then
 			this:reset_target( )
 		end
 	end
-
-	connected_players[ name ] = nil
+	registry.players[ name ] = nil
 end )
+
+minetest.register_on_joinplayer( function( player )
+	local name = player:get_player_name( )
+	registry.players[ name ] = player
+end )
+
+--------------------
+
+local builtin_item = minetest.registered_entities[ "__builtin:item" ]
+
+builtin_item.old_on_activate = builtin_item.on_activate
+builtin_item.old_set_item = builtin_item.set_item
+
+builtin_item.set_item = function ( self, itemstring )
+	self:old_set_item( itemstring )
+	self.item_name = ItemStack( self.itemstring ):get_name( )
+end
+
+builtin_item.on_activate = function ( self, staticdata, dtime, id )
+	self:old_on_activate( staticdata, dtime )
+	registry.spawnitems[ id ] = self.object
+end
+
+builtin_item.on_deactivate = function ( self, id )
+	for id, this in pairs( registry.avatars ) do
+		if this.target == self.object then
+			this:reset_target( )
+		end
+	end
+	registry.spawnitems[ id ] = nil
+end
 
 --------------------
 
@@ -254,6 +281,7 @@ mobs.register_mob = function ( name, def )
 		attack_range = def.attack_range,
 		escape_range = def.escape_range,
 		follow_range = def.follow_range,
+		pickup_range = def.pickup_range,
 		sneak_velocity = def.sneak_velocity,
 		walk_velocity = def.walk_velocity,
 		run_velocity = def.run_velocity,
@@ -276,6 +304,7 @@ mobs.register_mob = function ( name, def )
 		shoot_chance = def.shoot_chance,
 		weapon_params = def.weapon_params,
 		watch_wielditems = def.watch_wielditems,
+		watch_spawnitems = def.watch_spawnitems,
 		watch_players = def.watch_players,
 		sounds = def.sounds,
 		animation = def.animation,
@@ -389,22 +418,22 @@ mobs.register_mob = function ( name, def )
 		-- sensory processing --
 
 		check_suspect = function ( self, target, elapsed )
-			local player_name = target:get_player_name( )
-			local wielditem_name = target:get_wielded_item( ):get_name( )
-			local suspect = self.watch_players[ player_name ] or self.watch_wielditems[ wielditem_name ]
+			local entity = target:get_luaentity( )
+			local suspect
+
+			if not entity then
+				local player_name = target:get_player_name( )
+				local item_name = target:get_wielded_item( ):get_name( )
+				suspect = self.watch_players[ player_name ] or self.watch_wielditems[ item_name ]
+			elseif entity.name == "__builtin:item" then
+				suspect = self.watch_spawnitems[ entity.item_name ]
+			end
 
 			if type( suspect ) == "function" then
-				return suspect( self, player_name, wielditem_name, elapsed or 0.0 )
+				return suspect( self, target, elapsed or 0.0 )
 			else
 				return suspect
 			end
-		end,
-
-		is_starving = function ( self )
-			local hunger = self.hunger_noise:get2d( { x = self.timeout, y = 0 } )
-
-			-- offset of -1 is never hungry, offset of 1 is always hungry
-			return hunger > -self.hunger_offset
 		end,
 
 		is_paranoid = function ( self, target_pos )
@@ -433,6 +462,48 @@ mobs.register_mob = function ( name, def )
 
 				return radius <= this.view_radius and height <= this.view_height and
 					clarity > self.sensitivity and clarity * self.certainty > random( )
+			end
+		end,
+
+		-- utility functions --
+
+		is_starving = function ( self )
+			local hunger = self.hunger_noise:get2d( { x = self.timeout, y = 0 } )
+
+			-- offset of -1 is never hungry, offset of 1 is always hungry
+			return hunger > -self.hunger_offset
+		end,
+
+		iterate_registry = function ( self, radius, height, classes )
+			local length = radius * radius
+			local class_idx = 1
+			local key
+
+			local function is_inside_area( obj )
+				-- perform fast length-squared distance check
+				local target_pos = obj:get_pos( )
+				local a = self.pos.x - target_pos.x
+				local b = self.pos.z - target_pos.z
+
+				return a * a + b * b < length
+			end
+
+			return function ( )
+				while classes[ class_idx ] do
+					local obj
+
+					key, obj = next( classes[ class_idx ], key )
+					if obj then
+						if obj:get_hp( ) > 0 and is_inside_area( obj ) then
+							return obj
+						end
+					else
+						class_idx = class_idx + 1
+						key = nil
+					end
+				end
+
+				return nil
 			end
 		end,
 
@@ -723,10 +794,6 @@ mobs.register_mob = function ( name, def )
 				if self.speed > 0 then
 					self:set_speed( 0 )
 					self:set_animation( "stand" )
-
---					if self.on_wielditem( self, self.target )
---					if self.target:get_entity_name( ) then
---					end
 				end
 			else
 				if self.speed == 0 then
@@ -961,25 +1028,25 @@ mobs.register_mob = function ( name, def )
 			end
 
 			-- when not upset, seek out food or prey at random intervals
-			for _, player in pairs( connected_players ) do
-				local player_pos = player:getpos( )
+			for obj in self:iterate_registry( 30, 30, { registry.players, registry.spawnitems } ) do
+				local target_pos = obj:get_pos( )
 
-				if not player:get_attach( ) and self:is_paranoid( player_pos ) then
-					if random( 10 ) <= self.fear_factor and player:get_hp( ) > 0 then
+				if self:is_paranoid( target_pos ) then
+					if random( 10 ) <= self.fear_factor and obj:is_player( ) and not obj:get_attach( ) then
 						if self.type == "monster" then
-							self:set_attack_state( player )
+							self:set_attack_state( obj )
 							return
 						else
-							self:set_escape_state( player )
+							self:set_escape_state( obj )
 							return
 						end
 					elseif self.type == "animal" then
-						local state = self:check_suspect( player )
+						local state = self:check_suspect( obj )
 						if state == "escape" then
-							self:set_escape_state( player )
+							self:set_escape_state( obj )
 							return
 						elseif state == "follow" then
-							self:set_follow_state( player )
+							self:set_follow_state( obj )
 							return
 						end
 					end
@@ -991,7 +1058,7 @@ mobs.register_mob = function ( name, def )
 		
 		on_step = function( self, dtime, pos, rot, new_vel, old_vel, move_result )
 			self.pos = pos
-			self.yaw = rot.Y
+			self.yaw = rot.y
 			self.new_vel = new_vel
 			self.move_result = move_result
 
@@ -1037,7 +1104,7 @@ mobs.register_mob = function ( name, def )
 		end,
 
 		on_activate = function ( self, staticdata, dtime_s, id )
-			source_list[ id ] = self
+			registry.avatars[ id ] = self
 
 			self.object:set_armor_groups( { fleshy = self.armor } )
 			self:set_acceleration_vert( self.gravity )
@@ -1071,7 +1138,7 @@ mobs.register_mob = function ( name, def )
 		end,
 
 		on_deactivate = function ( self, id )
-			source_list[ id ] = nil
+			registry.avatars[ id ] = nil
 		end,
 		
 		get_staticdata = function ( self )
@@ -1179,8 +1246,8 @@ mobs.register_spawn_near = function ( name, def )
 
 	globaltimer.shift( 0.5 )
 	globaltimer.start( 10, name, function ( )
-		for player_name, player in pairs( connected_players ) do
-			local player_pos = player:getpos( )
+		for player_name, player in pairs( registry.players ) do
+			local player_pos = player:get_pos( )
 
 			if random( chance ) == 1 and is_area_safe == safe_area:containsp( player_pos ) then
 				local positions = minetest.find_nodes_in_area_under_air(
@@ -1330,5 +1397,5 @@ dofile( minetest.get_modpath( "mobs" ) .. "/weapons.lua" )
 -- compatibility for Minetest S3 engine
 
 if not vector.origin then
-	dofile( minetest.get_modpath( "mobs" ) .. "/compatibility.lua" )
+        dofile( minetest.get_modpath( "mobs" ) .. "/compatibility.lua" )
 end
