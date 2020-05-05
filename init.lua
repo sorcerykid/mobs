@@ -95,7 +95,7 @@ end
 
 --------------------
 
-local function effect( pos, amount, texture, min_size, max_size, radius, gravity )
+mobs.effect( pos, amount, texture, min_size, max_size, radius, gravity )
 	minetest.add_particlespawner({
 		amount = amount,
 		time = 0.5,
@@ -114,11 +114,11 @@ local function effect( pos, amount, texture, min_size, max_size, radius, gravity
 end
 
 local function smoke_effect( pos )
-	effect(pos, 8, "tnt_smoke.png", 1.4, 1.6, 2, 0 )
+	mobs.effect( pos, 8, "tnt_smoke.png", 1.4, 1.6, 2, 0 )
 end
 
 local function blood_effect( pos )
-	effect(pos, 4, "mobs_blood.png", 1.2, 1.4, 2, -10 )
+	mobs.effect( pos, 4, "mobs_blood.png", 1.2, 1.4, 2, -10 )
 end
 
 --------------------
@@ -127,8 +127,8 @@ local function node_locator( pos, size, time, color )
 	if is_debug then
 		minetest.add_particle( {
 			pos = pos,
-			vel = { x=0, y=0, z=0 },
-			acc = { x=0, y=0, z=0 },
+			velocity = { x=0, y=0, z=0 },
+			acceleration = { x=0, y=0, z=0 },
 			exptime = time + 4,
 			size = size,
 			collisiondetection = false,
@@ -319,6 +319,7 @@ mobs.register_mob = function ( name, def )
 		timeout = def.timeout,
 		is_tamed = false,
 		description = def.description,
+		custom = def.custom or { },
 
 		-- prepare noise generator with seed, octaves, persistence, spread
 		hunger_noise = PerlinNoise( random( 1000 ), 1, 0, def.hunger_params.spread ),
@@ -537,6 +538,10 @@ mobs.register_mob = function ( name, def )
 			self.alertness = self.alertness_states.ignore
 			self.is_tamed = false
 
+			if self.custom.after_state_change then
+				self.custom.after_state_change( self )
+			end
+
 			self:start_ignore_action( )
 		end,
 
@@ -552,6 +557,10 @@ mobs.register_mob = function ( name, def )
 				self.watch_players[ target:get_player_name( ) ] = "escape"
 			end
 
+			if self.custom.after_state_change then
+				self.custom.after_state_change( self )
+			end
+
 			self:start_escape_action( )
 		end,
 
@@ -562,6 +571,10 @@ mobs.register_mob = function ( name, def )
 			self.alertness = self.alertness_states.follow
 			self.is_tamed = true
 
+			if self.custom.after_state_change then
+				self.custom.after_state_change( self )
+			end
+
 			self:start_follow_action( )
 		end,
 
@@ -571,6 +584,10 @@ mobs.register_mob = function ( name, def )
 			self.target = target
 			self.alertness = self.alertness_states.attack
 			self.is_tamed = false
+
+			if self.custom.after_state_change then
+				self.custom.after_state_change( self )
+			end
 
 			self:start_attack_action( )
 		end,
@@ -785,7 +802,7 @@ mobs.register_mob = function ( name, def )
 			end
 
 			if cycles % 2 == 0 then
-				if self:get_target_yaw_delta( target_pos ) > rad_45 then
+				if self:get_target_yaw_delta( target_pos ) > rad_45 or random( 5 ) == 1 then
 					self:turn_to( self:get_target_yaw( target_pos, rad_20 ), 10 )
 				end
 			end
@@ -1134,10 +1151,18 @@ mobs.register_mob = function ( name, def )
 			self.timekeeper = Timekeeper( self )
 			self.timekeeper.start( 1.5, "damage", self.handle_damage )
 
+			if self.custom.after_activate then
+				self.custom.after_activate( self, id )
+			end
+
 			self:set_ignore_state( )
 		end,
 
 		on_deactivate = function ( self, id )
+			if self.custom.before_deactivate then
+				self.custom.before_deactivate( self, id )
+			end
+
 			registry.avatars[ id ] = nil
 		end,
 		
@@ -1153,6 +1178,10 @@ mobs.register_mob = function ( name, def )
 			local pos = self.pos
 			local tool = hitter:get_wielded_item( )
 
+			if self.custom.before_punch then
+				if not self.custom.before_punch( self, hitter, tool, hp, damage ) then return end
+			end
+
 			if damage == 0 then return end
 
 			if self.makes_bloodshed_effect and random( 2 ) == 2 then
@@ -1166,7 +1195,7 @@ mobs.register_mob = function ( name, def )
 			end
 
 			if hitter:is_player( ) then
-				if hitter:get_wielded_item( ) then
+				if tool then
 					tool:add_wear( 100 )
 					hitter:set_wielded_item( tool )
 				end
