@@ -1330,92 +1330,6 @@ mobs.register_spawner_node = function ( name, def )
 	minetest.register_node( name, def )
 end
 
-mobs.register_projectile = function ( name, def )
-	minetest.register_entity( name, {
-		physical = true,
-		visual = def.visual,
-		visual_size = def.visual_size,
-		textures = def.textures,
-		gravity = def.gravity,
-		trail_effect = def.trail_effect,
-		can_submerge = def.can_submerge,
-		on_launch = def.on_launch,
-		on_impact = def.on_impact,
-		on_impact_nodes = def.on_impact_nodes,
-		sounds = def.sounds,
-		timeout = def.timeout,
-
-		launch = function ( self, yaw, speed, incline, gravity )
-			self.object:set_yaw( yaw )
-			self.object:set_speed( speed )
-			self.object:set_velocity_vert( incline * speed )
-			self.object:set_acceleration_vert( gravity or self.gravity )
-
-			self.trail_effect.vel_x = -sin( yaw + self.trail_effect.angle ) * self.trail_effect.speed
-			self.trail_effect.vel_z = cos( yaw + self.trail_effect.angle ) * self.trail_effect.speed
-
-			minetest.sound_play( self.sounds.launch, { object = self.object, gain = 1 } )
-		end,
-
-		on_activate = function( self, staticdata, dtime_s )
-			self.timekeeper = Timekeeper( self )
-
-			if self.trail_effect then
-				self.timekeeper.start( self.trail_effect.period, "trail_effect" )
-			end
-			self.timekeeper.start( self.timeout, "timeout", function ( )
-				self.object:remove( )  -- remove expired projectile after timeout
-			end )
-		end,
-		
-		on_step = function( self, dtime, pos, rot, new_vel, old_vel, move_result )
-			local timers = self.timekeeper.on_step( dtime )
-
-			if timers.trail_effect then
-				local fx = self.trail_effect
-
-				for i = 1, fx.amount do
-					minetest.add_particle( {
-						pos = vector.offset( pos,
-							random_range( -0.5, 0.5 ),
-							random_range( -0.5, 0.5 ),
-							random_range( -0.5, 0.5 )
-						),
-						velocity = vector.new( fx.vel_x, fx.vel_y, fx.vel_z ),
-						acceleration = vector.new( 0, fx.acc_y, 0 ),
-						expirationtime = def.trail_effect.expiry,
-						collisiondetection = false,
-						texture = fx.texture,
-						size = fx.size,
-					} )
-				end
-			end
-
-			if move_result.is_swimming and not self.is_swimming then
-				minetest.sound_play( self.sounds.submerge, { object = self.object, gain = 1 } )
-				if not self.can_submerge then
-					self.object:remove( )
-				end
-			end
-			self.is_swimming = move_result.is_swimming
-
-			if move_result.collides_xz or move_result.collides_y then
-				if #move_result.touched_objects > 0 and self.on_impact then
-					for i, v in ipairs( move_result.touched_objects ) do
-						self:on_impact( pos, old_vel, v )
-					end
-				end
-				if #move_result.collisions > 0 and self.on_impact_nodes then
-					self:on_impact_nodes( pos, old_vel, move_result.collisions )
-				end
-
-				minetest.sound_play( self.sounds.impact, { object = self.object, gain = 1 } )
-				self.object:remove( )
-			end
-		end
-	} )
-end
-
 --------------------
 
 mobs.presets = {
@@ -1468,7 +1382,6 @@ mobs.presets = {
 dofile( minetest.get_modpath( "mobs" ) .. "/extras.lua" )
 dofile( minetest.get_modpath( "mobs" ) .. "/monsters.lua" )
 dofile( minetest.get_modpath( "mobs" ) .. "/animals.lua" )
-dofile( minetest.get_modpath( "mobs" ) .. "/weapons.lua" )
 
 -- compatibility for Minetest S3 engine
 

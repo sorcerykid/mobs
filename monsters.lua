@@ -43,7 +43,7 @@ mobs.register_mob( "mobs:ghost", {
 
 	fear_factor = 8,
 	flee_factor = 10,
-	attack_type = "shoot",
+	attack_type = "melee",
 	standoff = 4.0,
 	attack_range = 6.0,
 	escape_range = 2.5,
@@ -66,10 +66,6 @@ mobs.register_mob( "mobs:ghost", {
 	light_damage = 10,
 	water_damage = 0,
 	lava_damage = 0,
-
-	shoot_period = 1.25,
-	shoot_chance = 1,
-	weapon_params = { bullet = "mobs:fireball", rounds = 30, speed = 3.0 },
 
 	sounds = {
 		random = "mobs_ghost",

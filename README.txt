@@ -1,4 +1,4 @@
-Mobs Lite Mod v1.1
+Mobs Lite Mod v1.2
 By Leslie E. Krause
 
 Mobs Lite is a fully-working proof of concept for the Extended Motion Mechanics API for
@@ -19,7 +19,7 @@ Here are some of the other highlights of the Mobs Lite engine:
    buoyancy characteristics.
 
  * Sophisticated sensory analysis with a custom view-cone and acuity curve dependant on 
-   changing awareness level.
+   current alertness state.
 
  * Sensitivity thresholds and certainty factors determine whether creatures "see" a player 
    within their view cone.
@@ -27,20 +27,14 @@ Here are some of the other highlights of the Mobs Lite engine:
  * Animals will attempt to flee to safety when a player that previously punched them 
    returns to the field of view.
 
- * Monsters no longer randomly attack but rather exhibit varying degrees of aggression via 
-   a Perlin noise function.
-
  * Creatures avoid running into most obstacles by analyzing the surroundings and steadily
-   changing their course.
+   adjusting their course.
 
  * Mobs can be randomly spawned in the vicinity of players, thus relieving the overhead of 
    costly ABM-based spawners.
 
  * Timekeeper helper class ensures efficient dispatching of mob-related callbacks at the
-   appropriate server cycle.
-
- * Animals can be programmed to follow players or to grab items that are wielded by or 
-   dropped by nearby players.
+   appropriate server step.
 
  * And of course, much much more!
 
