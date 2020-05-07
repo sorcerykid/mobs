@@ -15,9 +15,9 @@ local registry = {
 	spawnitems = { },
 }
 
-world_gravity = -10
-liquid_density = 0.5
-liquid_viscosity = 0.6
+local world_gravity = -10
+local liquid_density = 0.5
+local liquid_viscosity = 0.6
 
 --------------------
 
@@ -40,11 +40,13 @@ local rad_60 = pi / 3
 local rad_45 = pi / 4
 local rad_30 = pi / 6
 local rad_20 = pi / 9
+local rad_10 = pi / 18
+local rad_5 = pi / 36
 local rad_0 = 0
 
 --------------------
 
-local function Timekeeper( this )
+function Timekeeper( this )
 	local timer_defs = { }
 	local clock = 0.0
 	local delay = 0.0
