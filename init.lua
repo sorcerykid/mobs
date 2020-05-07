@@ -125,6 +125,41 @@ end
 
 --------------------
 
+mobs.iterate_registry = function ( source_pos, radius, height, classes )
+	local length = radius * radius
+	local class_id = next( classes )
+	local key
+
+	local function is_inside_area( obj )
+		-- perform fast length-squared distance check
+		local target_pos = obj:get_pos( )
+		local a = source_pos.x - target_pos.x
+		local b = source_pos.z - target_pos.z
+
+		return a * a + b * b <= length and abs( source_pos.y - target_pos.y ) <= height
+	end
+
+	return function ( )
+		while class_id and classes[ class_id ] do
+			local obj
+
+			key, obj = next( registry[ class_id ], key )
+			if obj then
+				if obj:get_hp( ) > 0 and is_inside_area( obj ) then
+					return obj
+				end
+			else
+				class_id = next( classes, class_id )
+				key = nil
+			end
+		end
+
+		return nil
+	end
+end
+
+--------------------
+
 local function node_locator( pos, size, time, color )
 	if is_debug then
 		minetest.add_particle( {
@@ -145,6 +180,15 @@ local function printf( ... )
 end
 
 --------------------
+
+local function to_vector3d( length, yaw, pitch )
+	local y = sin( pitch ) * length
+	local length2 = cos( pitch ) * length
+	local x = -sin( yaw ) * length2
+	local z = cos( yaw ) * length2
+
+	return { x = x, y = y, z = z }, length2
+end
 
 local function normalize_angle( r )
 	-- stackoverflow.com/questions/1878907/the-smallest-difference-between-2-angles
@@ -210,8 +254,8 @@ minetest.register_on_leaveplayer( function( player, is_timeout )
 	local name = player:get_player_name( )
 
 	-- delete all target references (if applicable)
-	for id, this in pairs( registry.avatars ) do
-		if this.target == player then
+	for id, obj in pairs( registry.avatars ) do
+		if obj:get_luaentity( ).target == player then
 			this:reset_target( )
 		end
 	end
@@ -241,8 +285,8 @@ builtin_item.on_activate = function ( self, staticdata, dtime, id )
 end
 
 builtin_item.on_deactivate = function ( self, id )
-	for id, this in pairs( registry.avatars ) do
-		if this.target == self.object then
+	for id, obj in pairs( registry.avatars ) do
+		if obj:get_luaentity( ).target == self.object then
 			this:reset_target( )
 		end
 	end
@@ -475,39 +519,6 @@ mobs.register_mob = function ( name, def )
 
 			-- offset of -1 is never hungry, offset of 1 is always hungry
 			return hunger > -self.hunger_offset
-		end,
-
-		iterate_registry = function ( self, radius, height, classes )
-			local length = radius * radius
-			local class_idx = 1
-			local key
-
-			local function is_inside_area( obj )
-				-- perform fast length-squared distance check
-				local target_pos = obj:get_pos( )
-				local a = self.pos.x - target_pos.x
-				local b = self.pos.z - target_pos.z
-
-				return a * a + b * b < length
-			end
-
-			return function ( )
-				while classes[ class_idx ] do
-					local obj
-
-					key, obj = next( classes[ class_idx ], key )
-					if obj then
-						if obj:get_hp( ) > 0 and is_inside_area( obj ) then
-							return obj
-						end
-					else
-						class_idx = class_idx + 1
-						key = nil
-					end
-				end
-
-				return nil
-			end
 		end,
 
 		fire_weapon = function ( self, target_pos )
@@ -1047,7 +1058,7 @@ mobs.register_mob = function ( name, def )
 			end
 
 			-- when not upset, seek out food or prey at random intervals
-			for obj in self:iterate_registry( 30, 30, { registry.players, registry.spawnitems } ) do
+			for obj in mobs.iterate_registry( self.pos, 30, 30, { players = true, spawnitems = true } ) do
 				local target_pos = obj:get_pos( )
 
 				if self:is_paranoid( target_pos ) then
@@ -1109,7 +1120,7 @@ mobs.register_mob = function ( name, def )
 				local drag = -new_vel.y * liquid_viscosity * 1.5
 				local buoyancy = self.density - liquid_density
 				self.object:set_acceleration_vert( world_gravity * buoyancy + drag )
-				self.is_floating = true
+
 			elseif self.is_swimming then
 				self.object:set_acceleration_vert( ramp( world_gravity, new_vel.y, 2.0 ) )   -- hack to reduce oscilations
 			end
@@ -1123,7 +1134,7 @@ mobs.register_mob = function ( name, def )
 		end,
 
 		on_activate = function ( self, staticdata, dtime_s, id )
-			registry.avatars[ id ] = self
+			registry.avatars[ id ] = self.object
 
 			self.object:set_armor_groups( { fleshy = self.armor } )
 			self:set_acceleration_vert( self.gravity )
