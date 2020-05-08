@@ -12,6 +12,7 @@ mobs = { }
 local registry = {
 	players = { },
 	avatars = { },
+	objects = { },
 	spawnitems = { },
 }
 
@@ -80,8 +81,8 @@ function Timekeeper( this )
 		local timers = { }
 		for k, v in pairs( timer_defs ) do
 			if clock >= v.expiry and clock > v.started then
-				timer_defs[ k ].expiry = clock + v.period
-				timer_defs[ k ].cycles = v.cycles + 1
+				v.expiry = clock + v.period
+				v.cycles = v.cycles + 1
 				-- callback( this, cycles, period, elapsed, overrun )
 				if v.func and v.func( this, v.cycles, v.period, clock - v.started, clock - v.expiry ) then
 					self.clear( k )
@@ -237,7 +238,7 @@ end
 
 local function get_power_increase( scale, power, value )
 	return value >= scale and 1.0 or
-		1 - math.pow( ( scale - value ) / scale, 1 + power )
+		1 - pow( ( scale - value ) / scale, 1 + power )
 end
 
 local function check_limits( v, min_v, max_v )
@@ -1341,6 +1342,14 @@ mobs.register_spawner_node = function ( name, def )
 	end
 
 	minetest.register_node( name, def )
+end
+
+mobs.insert_object = function ( id, obj )
+	registry.objects[ id ] = obj
+end
+
+mobs.remove_object = function ( id )
+	registry.objects[ id ] = nil
 end
 
 --------------------
