@@ -98,7 +98,7 @@ end
 
 --------------------
 
-mobs.effect( pos, amount, texture, min_size, max_size, radius, gravity )
+mobs.effect = function ( pos, amount, texture, min_size, max_size, radius, gravity )
 	minetest.add_particlespawner({
 		amount = amount,
 		time = 0.5,
@@ -1398,6 +1398,28 @@ mobs.presets = {
 		end
 	end,
 }
+
+--------------------
+
+local emit_defs = { "mobs:griefer_ghost" }
+
+minetest.register_chatcommand( "mobs", {
+	description = "Spawn random mobs in the area (for testing purposes or just plain fun).",
+	privs = { server = true },
+	func = function( player_name, param )
+		local pos = minetest.get_player_by_name( player_name ):getpos( )
+		local total = param ~= "" and tonumber( param ) or 10
+
+		for count = 1, total do
+			local index = math.random( #emit_defs )
+			local y = pos.y + minetest.registered_entities[ emit_defs[ index ] ].y_offset + 2
+			local x = pos.x + math.random( -5, 5 )
+			local z = pos.z + math.random( -5, 5 )
+
+			minetest.add_entity( { x = x, y = y, z = z }, emit_defs[ index ] )
+		end
+	end
+} )
 
 --------------------
 

@@ -1,4 +1,4 @@
-Mobs Lite Mod v1.2
+Mobs Lite Mod v1.3
 By Leslie E. Krause
 
 Mobs Lite is a fully-working proof of concept for the Extended Motion Mechanics API for
@@ -35,6 +35,9 @@ Here are some of the other highlights of the Mobs Lite engine:
 
  * Timekeeper helper class ensures efficient dispatching of mob-related callbacks at the
    appropriate server step.
+
+ * Builtin lookup table allows for efficiently iterating over multiple classes of objects
+   within a specific radius.
 
  * And of course, much much more!
 
