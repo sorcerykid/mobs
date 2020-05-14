@@ -1,4 +1,4 @@
-Mobs Lite Mod v1.3
+Mobs Lite Mod v1.4
 By Leslie E. Krause
 
 Mobs Lite is a fully-working proof of concept for the Extended Motion Mechanics API for
@@ -24,11 +24,17 @@ Here are some of the other highlights of the Mobs Lite engine:
  * Sensitivity thresholds and certainty factors determine whether creatures "see" a player 
    within their view cone.
 
+ * Discrete awareness stages permit mobs to slowly ramp up or cool down alertness based on
+   the target's visibility.
+
  * Animals will attempt to flee to safety when a player that previously punched them 
    returns to the field of view.
 
  * Animals can be programmed to follow players that are wielding food and to eat directly
    from the player's hand.
+
+ * Monsters burst into multiple gibs when killed by explosive charges such as fire arrows,
+   landmines, and dynamite.
 
  * Seamless integration with Axon allows Mobs to react to various environmental stimulii
    like smells, sounds, etc.
@@ -109,14 +115,29 @@ Multimedia License (textures, sounds, and models)
 Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0)
 
   /sounds/mobs_damage_hand.ogg
-  by MTJohnson
+  by shelbyshark
   modified by sorcerykid
-  obtained from https://freesound.org/people/MTJohnson/sounds/426308/
+  obtained from https://freesound.org/people/shelbyshark/sounds/444703/
 
   /sounds/mobs_damage_tool.ogg
-  by Kreastricon62
+  by satanicupsman
   modified by sorcerykid
-  objained from https://freesound.org/people/Kreastricon62/sounds/323526/
+  objained from https://freesound.org/people/satanicupsman/sounds/144015/
+
+  /sounds/mobs_damage_tool.ogg
+  by rcroller
+  modified by sorcerykid
+  objained from https://freesound.org/people/rcroller/sounds/424144/
+
+  /sounds/mobs_gib_chunky.1.ogg
+  by GreenFireSound
+  modified by sorcerykid
+  objained from https://freesound.org/people/GreenFireSound/sounds/481090/
+
+  /sounds/mobs_gib_chunky.2.ogg
+  by GreenFireSound
+  modified by sorcerykid
+  objained from https://freesound.org/people/GreenFireSound/sounds/481090/
 
   /textures/mobs_spider.png
   by AspireMint

@@ -308,6 +308,52 @@ end )
 
 --------------------
 
+minetest.register_entity( "mobs:gibbage", {
+	physical = true,
+	visual = "mesh",
+	visual_size = { x = 1.0, y = 1.0 },
+	collisionbox = { -0.2, -0.1, -0.2, 0.2, 0.1, 0.2 },
+	motion_sounds = { },
+	physics = {
+		density = 0.5,
+		elasticity = 0.2,
+		resistance = 0.0,
+		friction = 0.7,
+	},
+
+	on_activate = function ( self, staticdata, dtime )
+		BasicPhysics( self )
+
+		self.timekeeper = Timekeeper( self )
+		self.timekeeper.start( math.random( 4, 8 ), "gibbage", function ( )
+			self.object:remove( )
+		end )
+
+		if dtime > 0 then
+			self.object:remove( )
+			return
+		end
+	end,
+
+	on_step = function ( self, dtime, pos )
+		self.timekeeper.on_step( dtime )
+	end,
+
+	launch = function ( self, intensity, texture, piece, sound )
+		local obj = self.object
+
+		obj:set_properties( {
+			mesh = "gib_" .. piece .. ".b3d",
+			textures = { texture },
+		} )
+		local vel_horz = min( 4, intensity * 0.5 )
+		local vel_vert = min( 4, intensity * 0.7 )
+		obj:set_velocity( vector.new( random_range( -vel_horz, vel_horz ), vel_vert, random_range( -vel_horz, vel_horz ) ) )
+		obj:set_animation( { x = 0, y = 120 }, random( 20, 40 ), 0, false )
+		self.motion_sounds.bouncing = sound
+	end,
+} )
+
 mobs.register_mob = function ( name, def )
 	minetest.register_entity( name, {
 		type = def.type,
@@ -325,6 +371,7 @@ mobs.register_mob = function ( name, def )
 		textures = def.textures,
 		makes_footstep_sound = def.makes_footstep_sound,
 		makes_bloodshed_effect = def.makes_bloodshed_effect,
+		gibbage_params = def.gibbage_params,
 		receptrons = def.receptrons,
 		death_message = def.death_message,
 		alertness_states = def.alertness_states,
@@ -1309,7 +1356,24 @@ mobs.register_mob = function ( name, def )
 
 			if damage == 0 then return end
 
-			if self.makes_bloodshed_effect and random( 2 ) == 2 then
+			if hp - damage <= 0 and self.gibbage_params then
+				local params = self.gibbage_params
+				local intensity = 0
+				for k, v in pairs( tool_capabilities.damage_groups ) do
+					if params.damage_groups[ k ] and v >= params.damage_groups[ k ] then
+						intensity = max( intensity, v )  -- get maximum intensity among all damage groups
+					end
+				end
+				if intensity > 0 then
+					for i = 1, #params.pieces do
+						local obj = minetest.add_entity( vector.offset_y( self.pos, 1.5 ), "mobs:gibbage" )
+						obj:get_luaentity( ):launch(
+							intensity, params.textures[ random( #params.textures ) ], params.pieces[ i ], params.sound )
+					end
+				else
+					blood_effect( pos )
+				end
+			elseif self.makes_bloodshed_effect and random( 2 ) == 2 then
 				blood_effect( pos )
 			end
 

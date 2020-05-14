@@ -28,7 +28,6 @@ mobs.register_mob( "mobs:ghost", {
 
 	groups = { mob = 1, monster = 1, flies = 1, jumps = 1, mobile = 1 },
 	textures = { "mobs_ghost.png" },
-
 	makes_footstep_sound = false,
 	makes_bloodshed_effect = false,
 
@@ -36,11 +35,11 @@ mobs.register_mob( "mobs:ghost", {
 	alertness_states = {
 		ignore = { view_offset = 2, view_radius = 8, view_height = 8, view_acuity = 0 },
 		search = { view_offset = 2, view_radius = 14, view_height = 8, view_acuity = 3, view_filter =  function ( self, obj, clarity )
-                        return clarity == 0.0 and "search" or "attack"
-                end },
+			return clarity == 0.0 and "search" or "attack"
+		end },
 		attack = { view_offset = 2, view_radius = 14, view_height = 8, view_acuity = 3 , view_filter =  function ( self, obj, clarity )
-                        return clarity == 0.0 and "search" or "attack"
-                end },
+			return clarity == 0.0 and "search" or "attack"
+		end },
 		escape = { view_offset = 2, view_radius = 14, view_height = 8, view_acuity = 3 },
 	},
 	awareness_stages = {
@@ -130,19 +129,32 @@ mobs.register_mob( "mobs:spider", {
 
 	groups = { mob = 1, monster = 1, walks = 1, jumps = 1, mobile = 1 },
 	textures = { "mobs_spider.png" },
-
 	makes_footstep_sound = false,
 	makes_bloodshed_effect = true,
+
+	gibbage_params = {
+		pieces = { "teeny", "teeny", "teeny" },
+		sound = "mobs_gib_chunky",
+		damage_groups = { blast_stim = 3 },
+		textures = { "mobs_spider_gib.png" }
+	},
+
+	gibbage_params = {
+		pieces = { "teeny", "teeny" },
+		sound = "mobs_gib_chunky",
+		damage_groups = { blast_stim = 3 },
+		textures = { "mobs_paniki_gib.png" }
+	},
 
 	hunger_params = { offset = 0.3, spread = 4.0 },
 	alertness_states = {
 		ignore = { view_offset = 6, view_radius = 6, view_height = 6, view_acuity = 3 },
 		search = { view_offset = 6, view_radius = 12, view_height = 6, view_acuity = 5, view_filter =  function ( self, obj, clarity )
-                        return clarity == 0.0 and "search" or "attack"
-                end },
+			return clarity == 0.0 and "search" or "attack"
+		end },
 		attack = { view_offset = 6, view_radius = 12, view_height = 6, view_acuity = 5, view_filter =  function ( self, obj, clarity )
-                        return clarity == 0.0 and "search" or "attack"
-                end },
+			return clarity == 0.0 and "search" or "attack"
+		end },
 		escape = { view_offset = 6, view_radius = 12, view_height = 6, view_acuity = 5 },
 	},
 	awareness_stages = {
@@ -198,7 +210,10 @@ mobs.register_mob( "mobs:spider", {
 		damage_hand = "mobs_damage_hand",
 	},
 	drops = {
+		{ name = "farming:blueberries", chance = 6, min = 1, max = 2 },
+		{ name = "farming:raspberries", chance = 6, min = 1, max = 2 },
 		{ name = "default:grass_1", chance = 8, min = 1, max = 2 },
+		{ name = "default:shrub", chance = 8, min = 1, max = 2 },
 	},
 	on_rightclick = nil,
 } ) 
@@ -234,7 +249,6 @@ mobs.register_mob( "mobs:bat", {
 
 	groups = { mob = 1, monster = 1, flies = 1, jumps = 1, mobile = 1 },
 	textures = { "mobs_paniki.png" },  --paniki from minetest defense
-
 	makes_footstep_sound = false,
 	makes_bloodshed_effect = true,
 
@@ -242,11 +256,11 @@ mobs.register_mob( "mobs:bat", {
 	alertness_states = {
 		ignore = { view_offset = 10, view_radius = 15, view_height = 15, view_acuity = 3 },
 		search = { view_offset = 10, view_radius = 20, view_height = 15, view_acuity = 5, view_filter =  function ( self, obj, clarity )
-                        return clarity == 0.0 and "search" or "attack"
-                end },
+			return clarity == 0.0 and "search" or "attack"
+		end },
 		attack = { view_offset = 10, view_radius = 20, view_height = 15, view_acuity = 5, view_filter =  function ( self, obj, clarity )
-                        return clarity == 0.0 and "search" or "attack"
-                end },
+			return clarity == 0.0 and "search" or "attack"
+		end },
 		escape = { view_offset = 10, view_radius = 20, view_height = 15, view_acuity = 3 },
 	},
 	awareness_stages = {
@@ -304,6 +318,7 @@ mobs.register_mob( "mobs:bat", {
 	},
 	drops = {
 		{ name = "default:apple", chance = 4, min = 1, max = 2 },
+		{ name = "default:orange", chance = 4, min = 1, max = 2 },
 	},
 } )
 
@@ -338,7 +353,6 @@ mobs.register_mob( "mobs:griefer_ghost", {
 	
 	groups = { mob = 1, monster = 1, walks = 1, jumps = 1, mobile = 1 },
 	textures = { "mobs_oerkki.png" },
-
 	makes_footstep_sound = true,
 	makes_bloodshed_effect = false,
 
@@ -346,11 +360,11 @@ mobs.register_mob( "mobs:griefer_ghost", {
 	alertness_states = {
 		ignore = { view_offset = 5, view_radius = 10, view_height = 8, view_acuity = 2 },
 		search = { view_offset = 5, view_radius = 20, view_height = 8, view_acuity = 2, view_filter =  function ( self, obj, clarity )
-        	        return clarity == 0.0 and "search" or "attack"
-	        end },
+			return clarity == 0.0 and "search" or "attack"
+		end },
 		attack = { view_offset = 5, view_radius = 20, view_height = 8, view_acuity = 2, view_filter =  function ( self, obj, clarity )
-                        return clarity == 0.0 and "search" or "attack"
-                end },
+			return clarity == 0.0 and "search" or "attack"
+		end },
 		escape = { view_offset = 5, view_radius = 20, view_height = 8, view_acuity = 2 },
 	},
 	awareness_stages = {
@@ -405,6 +419,9 @@ mobs.register_mob( "mobs:griefer_ghost", {
 	},
 	drops = {
 		{ name = "default:papyrus", chance = 6, min = 1, max = 2 },
+		{ name = "default:cactus", chance = 6, min = 1, max = 2 },
+		{ name = "farming:pumpkin_slice", chance = 8, min = 1, max = 2 },
+		{ name = "farming:melon_slice", chance = 8, min = 1, max = 2 },
 	},
 } )
 
