@@ -35,9 +35,19 @@ mobs.register_mob( "mobs:ghost", {
 	hunger_params = { offset = -0.1, spread = 3.0 },
 	alertness_states = {
 		ignore = { view_offset = 2, view_radius = 8, view_height = 8, view_acuity = 0 },
-		attack = { view_offset = 2, view_radius = 14, view_height = 8, view_acuity = 3 },
+		search = { view_offset = 2, view_radius = 14, view_height = 8, view_acuity = 3, view_filter =  function ( self, obj, clarity )
+                        return clarity == 0.0 and "search" or "attack"
+                end },
+		attack = { view_offset = 2, view_radius = 14, view_height = 8, view_acuity = 3 , view_filter =  function ( self, obj, clarity )
+                        return clarity == 0.0 and "search" or "attack"
+                end },
 		escape = { view_offset = 2, view_radius = 14, view_height = 8, view_acuity = 3 },
 	},
+	awareness_stages = {
+		attack = { decay = 15.0, abort_state = "ignore" },
+		escape = { decay = 10.0, abort_state = "ignore" },
+	},
+
 	certainty = 1.0,
 	sensitivity = 0.2,
 
@@ -46,8 +56,9 @@ mobs.register_mob( "mobs:ghost", {
 	attack_type = "melee",
 	standoff = 4.0,
 	attack_range = 6.0,
+	search_range = 2.5,
 	escape_range = 2.5,
-	sneak_velocity = 0.2,
+	sneak_velocity = 0.5,
 	walk_velocity = 0.5,
 	recoil_velocity = 1.5,
 	run_velocity = 1.5,
@@ -126,9 +137,20 @@ mobs.register_mob( "mobs:spider", {
 	hunger_params = { offset = 0.3, spread = 4.0 },
 	alertness_states = {
 		ignore = { view_offset = 6, view_radius = 6, view_height = 6, view_acuity = 3 },
-		attack = { view_offset = 6, view_radius = 12, view_height = 6, view_acuity = 5 },
+		search = { view_offset = 6, view_radius = 12, view_height = 6, view_acuity = 5, view_filter =  function ( self, obj, clarity )
+                        return clarity == 0.0 and "search" or "attack"
+                end },
+		attack = { view_offset = 6, view_radius = 12, view_height = 6, view_acuity = 5, view_filter =  function ( self, obj, clarity )
+                        return clarity == 0.0 and "search" or "attack"
+                end },
 		escape = { view_offset = 6, view_radius = 12, view_height = 6, view_acuity = 5 },
 	},
+	awareness_stages = {
+		search = { decay = 18.0, abort_state = "ignore" },
+		attack = { decay = 0.0, abort_state = "search" },
+		escape = { decay = 18.0, abort_state = "ignore" },
+	},
+
 	certainty = 1.0,
 	sensitivity = 0.2,
 
@@ -136,7 +158,9 @@ mobs.register_mob( "mobs:spider", {
 	flee_factor = 8,
 	attack_type = "melee",
 	attack_range = 3.0,
+	search_range = 3.0,
 	escape_range = 3.0,
+	sneak_velocity = 0.5,
 	walk_velocity = 1.0,
 	stray_velocity = 1.0,
 	recoil_velocity = 0.5,
@@ -174,10 +198,7 @@ mobs.register_mob( "mobs:spider", {
 		damage_hand = "mobs_damage_hand",
 	},
 	drops = {
-		{ name = "farming:blueberries", chance = 6, min = 1, max = 2 },
-		{ name = "farming:raspberries", chance = 6, min = 1, max = 2 },
 		{ name = "default:grass_1", chance = 8, min = 1, max = 2 },
-		{ name = "default:shrub", chance = 8, min = 1, max = 2 },
 	},
 	on_rightclick = nil,
 } ) 
@@ -220,9 +241,20 @@ mobs.register_mob( "mobs:bat", {
 	hunger_params = { offset = 1.0, spread = 1.0 },
 	alertness_states = {
 		ignore = { view_offset = 10, view_radius = 15, view_height = 15, view_acuity = 3 },
-		attack = { view_offset = 10, view_radius = 20, view_height = 15, view_acuity = 5 },
+		search = { view_offset = 10, view_radius = 20, view_height = 15, view_acuity = 5, view_filter =  function ( self, obj, clarity )
+                        return clarity == 0.0 and "search" or "attack"
+                end },
+		attack = { view_offset = 10, view_radius = 20, view_height = 15, view_acuity = 5, view_filter =  function ( self, obj, clarity )
+                        return clarity == 0.0 and "search" or "attack"
+                end },
 		escape = { view_offset = 10, view_radius = 20, view_height = 15, view_acuity = 3 },
 	},
+	awareness_stages = {
+		search = { decay = 14.0, abort_state = "ignore" },
+		attack = { decay = 0.0, abort_state = "search" },
+		escape = { decay = 14.0, abort_state = "ignore" },
+	},
+
 	certainty = 1.0,
 	sensitivity = 0.3,
 
@@ -230,6 +262,7 @@ mobs.register_mob( "mobs:bat", {
 	flee_factor = 6,
 	attack_type = "melee",
 	attack_range = 3.0,
+	search_range = 5.0,
 	escape_range = 5.0,
 	sneak_velocity = 1.0,
 	walk_velocity = 1.0,
@@ -271,7 +304,6 @@ mobs.register_mob( "mobs:bat", {
 	},
 	drops = {
 		{ name = "default:apple", chance = 4, min = 1, max = 2 },
-		{ name = "default:orange", chance = 4, min = 1, max = 2 },
 	},
 } )
 
@@ -313,9 +345,20 @@ mobs.register_mob( "mobs:griefer_ghost", {
 	hunger_params = { offset = 0.3, spread = 6.0 },
 	alertness_states = {
 		ignore = { view_offset = 5, view_radius = 10, view_height = 8, view_acuity = 2 },
-		attack = { view_offset = 5, view_radius = 20, view_height = 8, view_acuity = 2 },
+		search = { view_offset = 5, view_radius = 20, view_height = 8, view_acuity = 2, view_filter =  function ( self, obj, clarity )
+        	        return clarity == 0.0 and "search" or "attack"
+	        end },
+		attack = { view_offset = 5, view_radius = 20, view_height = 8, view_acuity = 2, view_filter =  function ( self, obj, clarity )
+                        return clarity == 0.0 and "search" or "attack"
+                end },
 		escape = { view_offset = 5, view_radius = 20, view_height = 8, view_acuity = 2 },
 	},
+	awareness_stages = {
+		search = { decay = 8.0, abort_state = "ignore" },
+		attack = { decay = 25.0, abort_state = "search" },
+		escape = { decay = 8.0, abort_state = "ignore" },
+	},
+
 	certainty = 1.0,
 	sensitivity = 0.6,
 
@@ -323,7 +366,9 @@ mobs.register_mob( "mobs:griefer_ghost", {
 	flee_factor = 10,
 	attack_type = "melee",
 	attack_range = 3.0,
+	search_range = 4.0,
 	escape_range = 4.0,
+	sneak_velocity = 0.5,
 	walk_velocity = 1.0,
 	stray_velocity = 1.0,
 	recoil_velocity = 0.5,
@@ -360,9 +405,6 @@ mobs.register_mob( "mobs:griefer_ghost", {
 	},
 	drops = {
 		{ name = "default:papyrus", chance = 6, min = 1, max = 2 },
-		{ name = "default:cactus", chance = 6, min = 1, max = 2 },
-		{ name = "farming:pumpkin_slice", chance = 8, min = 1, max = 2 },
-		{ name = "farming:melon_slice", chance = 8, min = 1, max = 2 },
 	},
 } )
 

@@ -27,17 +27,23 @@ Here are some of the other highlights of the Mobs Lite engine:
  * Animals will attempt to flee to safety when a player that previously punched them 
    returns to the field of view.
 
- * Creatures avoid running into most obstacles by analyzing the surroundings and steadily
-   adjusting their course.
+ * Animals can be programmed to follow players that are wielding food and to eat directly
+   from the player's hand.
 
- * Mobs can be randomly spawned in the vicinity of players, thus relieving the overhead of 
-   costly ABM-based spawners.
+ * Seamless integration with Axon allows Mobs to react to various environmental stimulii
+   like smells, sounds, etc.
 
  * Timekeeper helper class ensures efficient dispatching of mob-related callbacks at the
    appropriate server step.
 
  * Builtin lookup table allows for efficiently iterating over multiple classes of objects
    within a specific radius.
+
+ * Mobs can be randomly spawned in the vicinity of players, thus relieving the overhead of 
+   costly ABM-based spawners.
+
+ * Mobs will avoid running into most obstacles by analyzing the surroundings and steadily
+   adjusting their course.
 
  * And of course, much much more!
 
@@ -69,6 +75,9 @@ TNT Mod (required)
 
 Default Mod (required)
   https://github.com/minetest-game-mods/default
+
+Axon Mod (optional)
+  https://bitbucket.org/sorcerykid/axon
 
 Installation
 ----------------------

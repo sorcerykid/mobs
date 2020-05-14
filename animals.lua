@@ -34,21 +34,32 @@ mobs.register_mob( "mobs:kitten", {
 	hunger_params = { offset = -0.5, spread = 2.5 },
 	alertness_states = {
 		ignore = { view_offset = 2, view_radius = 4, view_height = 4, view_acuity = 3 },
+		search = { view_offset = 2, view_radius = 10, view_height = 4, view_acuity = 3, view_filter = function ( self, obj, clarity )
+                        return clarity == 0.0 and "search" or "follow"
+                end },
 		follow = { view_offset = 2, view_radius = 10, view_height = 4, view_acuity = 3 },
 		escape = { view_offset = 2, view_radius = 10, view_height = 4, view_acuity = 3 },
 	},
+        awareness_stages = {
+                search = { decay = 12.0, abort_state = "ignore" },
+                follow = { decay = 0.0, abort_state = "search" },
+                escape = { decay = 12.0, abort_state = "ignore" },
+        },
+
 	certainty = 1.0,
 	sensitivity = 0.6,
 
-	fear_factor = 0,
+	fear_factor = 6,
 	flee_factor = 10,
+	sneak_velocity = 0.8,
 	walk_velocity = 0.8,
 	stray_velocity = 1.0,
 	recoil_velocity = 1.0,
 	run_velocity = 1.2,
-	escape_range = 3.0,
+	search_range = 3.0,
 	follow_range = 2.0,
 	pickup_range = 2.0,
+	escape_range = 3.0,
 	can_jump = false,
 	can_walk = true,
 	enable_fall_damage = true,
@@ -129,21 +140,32 @@ mobs.register_mob( "mobs:rat", {
 	hunger_params = { offset = 0.0, spread = 2.5 },
 	alertness_states = {
 		ignore = { view_offset = 0, view_radius = 3, view_height = 3, view_acuity = 4 },
+		search = { view_offset = 0, view_radius = 6, view_height = 3, view_acuity = 6, view_filter = function ( self, obj, clarity )
+                        return clarity == 0.0 and "search" or "follow"
+                end },
 		follow = { view_offset = 0, view_radius = 6, view_height = 3, view_acuity = 6 },
 		escape = { view_offset = 0, view_radius = 6, view_height = 3, view_acuity = 6 },
 	},
+        awareness_stages = {
+                search = { decay = 12.0, abort_state = "ignore" },
+                follow = { decay = 0.0, abort_state = "search" },
+                escape = { decay = 12.0, abort_state = "ignore" },
+        },
+
 	certainty = 1.0,
 	sensitivity = 0.0,
 
 	fear_factor = 8,
 	flee_factor = 10,
+	sneak_velocity = 0.5,
 	walk_velocity = 0.5,
 	stray_velocity = 0.5,
 	recoil_velocity = 0.5,
 	run_velocity = 1.2,
-	escape_range = 0.0,
+	search_range = 2.0,
 	follow_range = 2.0,
 	pickup_range = 2.0,
+	escape_range = 0.0,
 	can_jump = false,
 	can_walk = true,
 	enable_fall_damage = true,
@@ -212,21 +234,32 @@ mobs.register_mob( "mobs:hare", {
 	hunger_params = { offset = 0.0, spread = 2.0 },
 	alertness_states = {
 		ignore = { view_offset = 0, view_radius = 2, view_height = 6, view_acuity = 0 },
+		search = { view_offset = 0, view_radius = 12, view_height = 6, view_acuity = 3, view_filter = function ( self, obj, clarity )
+                        return clarity == 0.0 and "search" or "follow"
+                end },
 		follow = { view_offset = 0, view_radius = 12, view_height = 6, view_acuity = 3 },
 		escape = { view_offset = 0, view_radius = 12, view_height = 6, view_acuity = 3 },
 	},
+        awareness_stages = {
+                search = { decay = 12.0, abort_state = "ignore" },
+                follow = { decay = 0.0, abort_state = "search" },
+                escape = { decay = 12.0, abort_state = "ignore" },
+        },
+
 	certainty = 1.0,
 	sensitivity = 0.5,
 
 	fear_factor = 6,
 	flee_factor = 10,
+	sneak_velocity = 2.0,
 	walk_velocity = 3.0,
 	stray_velocity = 1.0,
 	recoil_velocity = 2.0,
 	run_velocity = 3.5,
-	escape_range = 3.0,
+	search_range = 3.0,
 	follow_range = 3.0,
 	pickup_range = 2.0,
+	escape_range = 3.0,
 	can_jump = true,
 	can_walk = true,
 	enable_fall_damage = true,
@@ -306,18 +339,29 @@ mobs.register_mob( "mobs:chicken", {
 	hunger_params = { offset = 0.0, spread = 2.0 },
 	alertness_states = {
 		ignore = { view_offset = 2, view_radius = 4, view_height = 4, view_acuity = 0 },
+		search = { view_offset = 2, view_radius = 6, view_height = 4, view_acuity = 2, view_filter = function ( self, obj, clarity )
+                        return clarity == 0.0 and "search" or "follow"
+                end },
 		follow = { view_offset = 2, view_radius = 6, view_height = 4, view_acuity = 2 },
 		escape = { view_offset = 2, view_radius = 6, view_height = 4, view_acuity = 2 },
 	},
+        awareness_stages = {
+                search = { decay = 12.0, abort_state = "ignore" },
+                follow = { decay = 0.0, abort_state = "search" },
+                escape = { decay = 12.0, abort_state = "ignore" },
+        },
+
 	certainty = 1.0,
 	sensitivity = 0.3,
 
 	fear_factor = 2,
 	flee_factor = 10,
+	sneak_velocity = 1.5,
 	walk_velocity = 1.5,
 	stray_velocity = 1.0,
 	recoil_velocity = 2.0,
 	run_velocity = 2.0,
+	search_range = 3.0,
 	follow_range = 3.0,
 	pickup_range = 2.0,
 	escape_range = 3.0,

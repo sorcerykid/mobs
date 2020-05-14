@@ -20,6 +20,8 @@ local world_gravity = -10
 local liquid_density = 0.5
 local liquid_viscosity = 0.6
 
+local next_noise_id = 1
+
 --------------------
 
 local random = math.random
@@ -66,7 +68,7 @@ function Timekeeper( this )
 	end
 
 	self.start_now = function ( period, name, func )
-		if func( this, 0, period, 0.0, 0.0 ) then
+		if not func( this, 0, period, 0.0, 0.0 ) then
 			timer_defs[ name ] = { cycles = 0, period = period, expiry = clock + period, started = clock, func = func }
 		end
 	end
@@ -256,8 +258,9 @@ minetest.register_on_leaveplayer( function( player, is_timeout )
 
 	-- delete all target references (if applicable)
 	for id, obj in pairs( registry.avatars ) do
-		if obj:get_luaentity( ).target == player then
-			this:reset_target( )
+		local this = obj:get_luaentity( )
+		if this.target and this.target.obj == player then
+			this:reset_alertness( "ignore" )
 		end
 	end
 	registry.players[ name ] = nil
@@ -287,8 +290,9 @@ end
 
 builtin_item.on_deactivate = function ( self, id )
 	for id, obj in pairs( registry.avatars ) do
-		if obj:get_luaentity( ).target == self.object then
-			this:reset_target( )
+		local this = obj:get_luaentity( )
+		if this.target and this.target.obj == self.object then
+			this:reset_alertness( "ignore" )
 		end
 	end
 	registry.spawnitems[ id ] = nil
@@ -324,11 +328,13 @@ mobs.register_mob = function ( name, def )
 		receptrons = def.receptrons,
 		death_message = def.death_message,
 		alertness_states = def.alertness_states,
+		awareness_stages = def.awareness_stages,
 		sensitivity = def.sensitivity or 0.0,
 		certainty = def.certainty or 1.0,
 		attack_range = def.attack_range,
 		escape_range = def.escape_range,
 		follow_range = def.follow_range,
+		search_range = def.search_range,
 		pickup_range = def.pickup_range,
 		sneak_velocity = def.sneak_velocity,
 		walk_velocity = def.walk_velocity,
@@ -351,9 +357,9 @@ mobs.register_mob = function ( name, def )
 		shoot_period = def.shoot_period,
 		shoot_chance = def.shoot_chance,
 		weapon_params = def.weapon_params,
-		watch_wielditems = def.watch_wielditems,
-		watch_spawnitems = def.watch_spawnitems,
-		watch_players = def.watch_players,
+		watch_wielditems = def.watch_wielditems or { },
+		watch_spawnitems = def.watch_spawnitems or { },
+		watch_players = def.watch_players or { },
 		sounds = def.sounds,
 		animation = def.animation,
 		fear_factor = def.fear_factor,
@@ -365,11 +371,13 @@ mobs.register_mob = function ( name, def )
 		enable_swimming = true,
 		shoot_count = 0,
 		timeout = def.timeout,
+		neutral_state = "ignore",
+		defense_state = def.type == "monster" and "attack" or "ignore",	
 		is_tamed = false,
 		description = def.description,
 		after_activate = def.after_activate,
 		before_deactivate = def.before_deactivate,
-		after_state_change = def.after_state_change,
+		before_state_change = def.before_state_change,
 		before_punch = def.before_punch,
 
 		-- prepare noise generator with seed, octaves, persistence, spread
@@ -426,14 +434,14 @@ mobs.register_mob = function ( name, def )
 		get_direct_yaw_delta = function ( self, pos )
 			local yaw = self:get_direct_yaw( pos )
 			return abs( normalize_angle( yaw - self.yaw ) )
-		end
-
-		get_target_yaw = function ( self, pos, r_limit, r_ratio )
-			return self:get_direct_yaw( pos ) + upper_random( r_limit, r_ratio or 1 )
 		end,
 
-		get_target_yaw_delta = function ( self, pos )
-			local yaw = self:get_direct_yaw( pos )
+		get_target_yaw = function ( self, r_limit, r_ratio )
+			return self:get_direct_yaw( self.target.pos ) + upper_random( r_limit, r_ratio or 1 )
+		end,
+
+		get_target_yaw_delta = function ( self )
+			local yaw = self:get_direct_yaw( self.target.pos )
 			return abs( normalize_angle( yaw - self.yaw ) )
 		end,
 
@@ -482,7 +490,7 @@ mobs.register_mob = function ( name, def )
 		end,
 
 		play_sound = function ( self, name )
-			minetest.sound_play( name, { object = self.object } )
+			minetest.sound_play( name, { object = self.object, loop = false } )
 		end,
 
 		play_sound_repeat = function ( self, name )
@@ -504,31 +512,34 @@ mobs.register_mob = function ( name, def )
 
 		-- sensory processing --
 
-		check_suspect = function ( self, target, elapsed )
-			local entity = target:get_luaentity( )
-			local suspect
+		check_suspect = function ( self, target_obj, clarity, elapsed )
+			-- default to defense or neutral state if not in any watch list
+			local suspect = random( 10 ) <= self.fear_factor and self.defense_state or self.neutral_state
+			local entity = target_obj:get_luaentity( )
 
 			if not entity then
-				local player_name = target:get_player_name( )
-				local item_name = target:get_wielded_item( ):get_name( )
-				suspect = self.watch_players[ player_name ] or self.watch_wielditems[ item_name ]
+				local player_name = target_obj:get_player_name( )
+				local item_name = target_obj:get_wielded_item( ):get_name( )
+				suspect = self.watch_players[ player_name ] or self.watch_wielditems[ item_name ] or suspect
 			elseif entity.name == "__builtin:item" then
-				suspect = self.watch_spawnitems[ entity.item_name ]
+				suspect = self.watch_spawnitems[ entity.item_name ] or suspect
 			end
 
 			if type( suspect ) == "function" then
-				return suspect( self, target, elapsed or 0.0 )
+				return suspect( self, target_obj, clarity, elapsed or 0.0 )  -- must always return a valid state
 			else
 				return suspect
 			end
 		end,
 
-		is_paranoid = function ( self, target_pos )
+		get_visibility = function ( self, target_pos )
 			local length = get_vector_length( self.pos, target_pos )
+			local height = get_vector_height( self.pos, target_pos )
 			local this = self.alertness
 
-			if not this or length > 48 then
-				return false
+			if not this or length > 48 or height > 48 then  -- immediately eliminate far objects
+				return 0.0, false, false
+
 			else
 				local view_range = this.view_radius + this.view_offset
 				local view_pos = this.view_offset == 0.0 and self.pos or vector.new(
@@ -538,93 +549,123 @@ mobs.register_mob = function ( name, def )
 				)
 
 				local radius = get_vector_length( view_pos, target_pos )
-				local height = get_vector_height( view_pos, target_pos )
 				local clarity = get_power_decrease( 1.0, this.view_acuity, length / view_range )
 
 				-- certainty factor ranges from 0 (target never evident) to 1 (target always evident)
 				-- sensitivity threshold ranges from 0 (full perception) to 1 (no perception)
 
 				--node_locator( vector.offset_y( view_pos ), 4.5, 1.0, "yellow" )
-				--printf( "is_paranoid(%s):\n[%s] radius <= view_radius\n[%s] height <= view_height\n%0.2f = clarity (%0.2f = sensitivity, %0.2f = certainty)", self.name, radius <= this.view_radius and "x" or " ", height <= this.view_height and "x" or " ", clarity, self.sensitivity, self.certainty )
+				--printf( "is_paranoid(%s):\n[%s] radius <= view_radius\n[%s] height <= view_height\n%0.2f = clarity (%0.2f = sensitivity, %$
 
-				return radius <= this.view_radius and height <= this.view_height and
-					clarity > self.sensitivity and clarity * self.certainty > random( )
+				local is_visible = radius <= this.view_radius and height <= this.view_height
+				local is_evident = clarity > self.sensitivity and clarity * self.certainty > random( )
+
+				return clarity, is_visible, is_evident
 			end
 		end,
 
-		-- state-change handlers --
+		-- target functions --
 
-		reset_target = function ( self )
-			if self.target then
-				self:set_ignore_state( )
+		create_target = function ( self, obj )
+			local pos = obj:get_pos( )
+			local clarity, is_visible, is_evident = self:get_visibility( pos )
+			local alertness = self.alertness_states[ self.state ]
+
+			-- when creating target it must be visible and evident!
+			if is_visible and is_evident then
+				if alertness and alertness.view_filter then
+					return alertness.view_filter( self, obj, clarity ), { obj = obj, pos = pos }
+				elseif clarity > 0.0 then
+					return self:check_suspect( obj, clarity ), { obj = obj, pos = pos }
+				end
+			else
+				return self.state, self.target
 			end
 		end,
 
-		set_ignore_state = function ( self )
-			if self.state == "ignore" then return end
+		verify_target = function ( self, elapsed )
+			if self.target.obj then
+				local target_pos = self.target.obj:get_pos( )  -- check target's new position
+				local clarity, is_visible, is_evident = self:get_visibility( target_pos )
+				local alertness = self.alertness_states[ self.state ]
 
-			self.state = "ignore"
-			self.target = nil
-			self.alertness = self.alertness_states.ignore
-			self.is_tamed = false
+				-- update last-known target position only if visible and evident
+				if is_visible and is_evident then
+					self.target.pos = target_pos
+				else
+					clarity = 0.0
+				end
 
-			if self.custom.after_state_change then
-				self.custom.after_state_change( self )
+				if alertness and alertness.view_filter then
+					return alertness.view_filter( self, self.target.obj, clarity )
+				elseif clarity > 0.0 then
+					return self:check_suspect( self.target.obj, clarity, elapsed )
+				else
+					return self.abort_state or self.neutral_state
+				end
 			end
 
-			self:start_ignore_action( )
+			return self.state
 		end,
 
-		set_escape_state = function ( self, target )
-			if self.state == "escape" then return end
-			self.state = "escape"
+		locate_target = function ( self )
+			if self.sounds and self.sounds.random and random( 35 ) == 1 then
+				minetest.sound_play( self.sounds.random, { object = self.object } )
+			end
+
+			-- when not upset, seek out food or prey at random intervals
+			for obj in mobs.iterate_registry( self.pos, 30, 30, { players = true, spawnitems = true } ) do
+
+				if random( 10 ) <= self.fear_factor and obj:is_player( ) and not obj:get_attach( ) then
+					local state, target = self:create_target( obj )
+					if state ~= self.state then
+						self:reset_alertness( state, target )
+						return
+					end
+				end
+			end
+		end,
+
+		-- alertness and awareness functions --
+
+		start_awareness = function ( self, target )
+			local awareness = self.awareness_stages[ self.state ]
+
+			if awareness then
+				self.abort_state = awareness.abort_state
+				if awareness.decay > 0 then
+					self.timekeeper.start( awareness.decay, "awareness", function ( )
+						self:reset_alertness( self.abort_state, self.target )
+					end )
+				else
+					self.timekeeper.clear( "awareness" )
+				end
+			else
+				self.abort_state = nil
+				self.timekeeper.clear( "awareness" )
+			end
+		end,
+
+		reset_alertness = function ( self, state, target )
+			if state == self.state then return end
+
+			if self.before_state_change then
+				self:before_state_change( self.state, state )
+			end
+
+			self.state = state
 			self.target = target
-			self.alertness = self.alertness_states.escape
-			self.is_tamed = false
+			self.alertness = self.alertness_states[ state ]
 
-			if random( 2 ) == 1 then
-				-- this is a bad player, so keep watch
-				self.watch_players[ target:get_player_name( ) ] = "escape"
-			end
-
-			if self.custom.after_state_change then
-				self.custom.after_state_change( self )
-			end
-
-			self:start_escape_action( )
-		end,
-
-		set_follow_state = function ( self, target )
-			if self.state == "follow" then return end
-			self.state = "follow"
-			self.target = target
-			self.alertness = self.alertness_states.follow
-			self.is_tamed = true
-
-			if self.custom.after_state_change then
-				self.custom.after_state_change( self )
-			end
-
-			self:start_follow_action( )
-		end,
-
-		set_attack_state = function ( self, target )
-			if self.state == "attack" then return end
-			self.state = "attack"
-			self.target = target
-			self.alertness = self.alertness_states.attack
-			self.is_tamed = false
-
-			if self.custom.after_state_change then
-				self.custom.after_state_change( self )
-			end
-
-			self:start_attack_action( )
+			self:start_awareness( )
+			self.action_funcs[ state ]( self )
 		end,
 
 		-- action hooks --
 
 		start_ignore_action = function ( self )
+			self.target = nil  -- forget any target
+
 			if not self.move_result.is_standing then
 				-- always stand when in mid-air
 				self:set_speed( 0 )
@@ -637,7 +678,7 @@ mobs.register_mob = function ( name, def )
 				self:set_animation( "stand" )
 			end
 
-			self.timekeeper.start( 1.0, "hunger", self.handle_hunger )
+			self.timekeeper.start( 1.0, "hunger", self.locate_target )
 			self.timekeeper.start( 1.0, "action", self.on_ignore_action )
 		end,
 
@@ -727,6 +768,8 @@ mobs.register_mob = function ( name, def )
 		end,
 
 		start_follow_action = function ( self )
+			assert( self.target.pos )  -- sanity check
+
 			self:turn_to( self:get_target_yaw( rad_20 ), 10 )
 			self:set_speed( self.recoil_velocity )
 			self:set_animation( "walk" )
@@ -736,13 +779,10 @@ mobs.register_mob = function ( name, def )
 		end,
 
 		on_follow_action = function ( self, cycles, period, elapsed )
-			local target_pos = self:get_target_pos( 0.5 )
-			local dist = vector.distance( self.pos, target_pos )
-
-			if cycles % 2 == 0 then
-				local next_state = validate_target( )
-				if next_state ~= self.state then
-					self:reset_state( next_state, self.target )
+			if cycles % 2 == 0 then  -- validate target every 1.0 seconds
+				local goal_state = self:verify_target( )
+				if goal_state ~= self.state then
+					self:reset_alertness( goal_state, self.target )
 					return
 				end
 			end
@@ -752,6 +792,9 @@ mobs.register_mob = function ( name, def )
 					self:turn_to( self:get_target_yaw( rad_20 ), 10 )
 				end
 			end
+
+			local target_pos = self.target.pos
+			local dist = vector.distance( self.pos, target_pos )
 
 			if dist <= self.follow_range then
 				if self.speed > 0 then
@@ -786,10 +829,71 @@ mobs.register_mob = function ( name, def )
 			end
 		end,
 
-		start_escape_action = function ( self )
-			local target_pos = vector.offset_y( self.target:get_pos( ) )
-			local dist = vector.distance( self.pos, self.target.pos )
+		start_search_action = function ( self )
+			assert( self.target.pos )  -- sanity check
 
+			self:turn_to( self:get_target_yaw( rad_5 ), 10 )
+			self:set_speed( self.walk_velocity )
+			self:set_animation( "walk" )
+
+			self.timekeeper.clear( "hunger" )
+			self.timekeeper.start( 0.5, "action", self.on_search_action )
+		end,
+
+		on_search_action = function ( self, cycles, period, elapsed )
+			if cycles % 2 == 0 then  -- validate target every 1.0 seconds
+				local goal_state = self:verify_target( )
+				if goal_state ~= self.state then
+					self:reset_alertness( goal_state, self.target )
+					return
+				end
+			end
+
+			local target_pos = self.target.pos
+			local dist = vector.distance( self.pos, target_pos )
+
+			-- go to last known position of target and look around
+			if dist <= self.search_range then
+				if self.speed > 0 then
+					self:set_speed( 0 )
+					self:set_animation( "stand" )
+				end
+
+				if random( 4 ) == 1 then
+					self:turn_to( self:get_random_yaw( rad_180 ), 20 )
+				end
+			else
+				if self.speed == 0 then
+					self:set_speed( self.walk_velocity )
+					self:set_animation( "walk" )
+
+				else
+					if self.can_fly then
+						-- descend or ascend to slightly above player altitude, but prevent incessant bobbing
+						local v = 0
+						if target_pos.y + 2.5 > self.pos.y then
+							v = self.walk_velocity
+						elseif target_pos.y + 0.5 < self.pos.y then
+							v = -self.walk_velocity
+						end
+						self:set_velocity_vert( v )
+
+					elseif self.can_jump and self.move_result.is_standing then
+						if self.yield_level < 3 and self.move_result.collides_xz then
+							self.yield_level = self.yield_level + 1
+							self.object:set_velocity_vert( 5 )
+						elseif random( 2 ) == 1 then
+							self.object:set_velocity_vert( 5 )
+						end
+					end
+				end
+			end
+		end,
+
+		start_escape_action = function ( self )
+			assert( self.target.pos )  -- sanity check
+
+			local dist = vector.distance( self.pos, self.target.pos )
 			if self:get_target_yaw_delta( ) < rad_60 and dist <= self.escape_range then
 				-- recoil if facing intruder
 				self:set_speed( -self.recoil_velocity )
@@ -804,6 +908,11 @@ mobs.register_mob = function ( name, def )
 				self:set_animation( "walk" )
 			end
 
+			if self.target.obj and self.target.obj:is_player( ) then
+				-- this is a bad player, so keep watch
+				self.watch_players[ self.target.obj:get_player_name( ) ] = "escape"
+			end
+
 			if self.sounds and self.sounds.escape and random( 2 ) == 1  then
 				minetest.sound_play( self.sounds.escape, { object = self.object } )
 			end
@@ -813,15 +922,16 @@ mobs.register_mob = function ( name, def )
 		end,
 
 		on_escape_action = function ( self, cycles, period, elapsed )
-			local target_pos = self:get_target_pos( 0.5 )
-			local dist = vector.distance( self.pos, target_pos )
-
 			if cycles % 2 == 0 then
-				if not self:is_paranoid( elapsed ) or random( 10 ) > self.flee_factor then
-					self:lower_awareness( )
+				local goal_state = self:verify_target( )
+				if goal_state ~= self.state or random( 10 ) > self.flee_factor then
+					self:reset_alertness( goal_state, self.target )
 					return
 				end
 			end
+
+			local target_pos = self.target.pos
+			local dist = vector.distance( self.pos, target_pos )
 
 			if dist <= self.escape_range then
 				-- if close, keep backtracking
@@ -867,6 +977,8 @@ mobs.register_mob = function ( name, def )
 		end,
 
 		start_attack_action = function ( self )
+			assert( self.target.pos and self.target.obj )  -- sanity check
+
 			self:set_speed( self.run_velocity )
 			self:set_animation( "run" )
 			self:turn_to( self:get_target_yaw( rad_90 ), 10 )
@@ -880,22 +992,23 @@ mobs.register_mob = function ( name, def )
 		end,
 
 		on_attack_action = function ( self, cycles, period, elapsed )
-			if self.target:get_hp( ) == 0 or self.target:get_attach( ) then
-				self:set_ignore_state( )
+			if self.target.obj:get_hp( ) == 0 or self.target.obj:get_attach( ) then
+				self:reset_alertness( "ignore" )
 				return
 			end
 
 			if cycles % 5 == 0 then  -- validate target once per second
-				if not self:is_paranoid( elapsed ) then
-					self:lower_awareness( )
+				local goal_state = self:verify_target( )
+				if goal_state ~= self.state then
+					self:reset_alertness( goal_state, self.target )
 					return
 				end
 			end
 
-			self:turn_to( self:get_target_yaw( rad_0 ), 5 )
-
-			local target_pos = vector.offset_y( self.target.pos, 0.5 )
+			local target_pos = self.target.pos
 			local dist = vector.distance( self.pos, target_pos )
+
+			self:turn_to( self:get_target_yaw( rad_0 ), 5 )
 
 			if dist <= self.attack_range then
 				if self.attack_type == "shoot" and self.fire_weapon then
@@ -915,7 +1028,7 @@ mobs.register_mob = function ( name, def )
 							minetest.sound_play( self.sounds.attack, { object = self.object } )
 						end
 					--      if minetest.line_of_sight( pos, target_pos, 0.5 ) then  -- do not hit player through walls!
-							self.target:punch( self.object, 1.0,  {
+							self.target.obj:punch( self.object, 1.0,  {
 								full_punch_interval = 1.0,
 								damage_groups = { fleshy=self.damage }
 							}, vector.direction( self.pos, target_pos ) )
@@ -1027,7 +1140,7 @@ mobs.register_mob = function ( name, def )
 			self.cur_animation = type
 		end,
 
-		-- damage and hunger routines --
+		-- damage handler --
 
 		handle_damage = function ( self )
 			-- handle environmental damage (light, water, and lava)
@@ -1062,24 +1175,6 @@ mobs.register_mob = function ( name, def )
 					if hp <= 0 then
 					smoke_effect( self.pos )
 					self.object:remove( )
-				end
-			end
-		end,
-
-		locate_target = function ( self )
-			if self.sounds and self.sounds.random and random( 35 ) == 1 then
-				minetest.sound_play( self.sounds.random, { object = self.object } )
-			end
-
-			-- when not upset, seek out food or prey at random intervals
-			for obj in mobs.iterate_registry( self.pos, 30, 30, { players = true, spawnitems = true } ) do
-
-				if random( 10 ) <= self.fear_factor and obj:is_player( ) and not obj:get_attach( ) then
-					local state, target = self:create_target( obj )
-					if state ~= self.state then
-						self:reset_state( state, target )
-						return
-					end
 				end
 			end
 		end,
@@ -1153,19 +1248,13 @@ mobs.register_mob = function ( name, def )
 			self.move_result = { collides_xz = false, collides_y = true, is_standing = true }
 			self.pos = self.object:get_pos( )
 
-			if self.type == "monster" then
-				self.on_create_target = function ( obj, clarity )
-					return clarity < 0.5 and "search" or "attack"
-				end
-			else
-				self:set_escape_state( obj )
-				return
-			end
-
-			self.reset_funcs = {
-				ignore = self.set_ignore_state,
-				remark = self.set_remark_state,
-				search = self.set_search_state,
+			self.action_funcs = {
+				ignore = self.start_ignore_action,
+				remark = self.start_remark_action,
+				search = self.start_search_action,
+				follow = self.start_follow_action,
+				escape = self.start_escape_action,
+				attack = self.start_attack_action,
 			}
 
 			if staticdata then
@@ -1191,7 +1280,7 @@ mobs.register_mob = function ( name, def )
 				self.after_activate( self, id )
 			end
 
-			self:set_ignore_state( )
+			self:reset_alertness( self.neutral_state )
 		end,
 
 		on_deactivate = function ( self, id )
@@ -1238,9 +1327,9 @@ mobs.register_mob = function ( name, def )
 				end
 
 				if hp - damage <= self.hp_low then
-					self:set_escape_state( hitter )
+					self:reset_alertness( "escape", { obj = hitter, pos = hitter:get_pos( ) } )
 				elseif self.type == "monster" then
-					self:set_attack_state( hitter )
+					self:reset_alertness( "attack", { obj = hitter, pos = hitter:get_pos( ) } )
 				end
 			end
 		end,
@@ -1373,18 +1462,18 @@ end
 
 --------------------
 
-mobs.play_sound = function ( obj, name )
-        minetest.sound_play( name, { loop = false }, true )
+mobs.play_sound = function ( pos, name )
+	minetest.sound_play( name, { loop = false }, true )
 end
 
 mobs.make_noise = function ( pos, radius, group, intensity )
-	axon.generate_radial_stimulus( pos, radius, 0.0, 0.0, 1, { [group] = intensity }, { avatars = true } )
+	axon.generate_radial_stimulus( pos, radius, 0.0, 0.0, { [group] = intensity }, { avatars = true } )
 end
 
 mobs.make_noise_repeat = function ( pos, radius, interval, duration, group, intensity )
 	globaltimer.start_now( interval, "noise" .. next_noise_id, function ( this, cycles, period, elapsed )
 		if elapsed >= duration then return true end  -- we're finished, so cancel timer
-		axon.generate_radial_stimulus( pos, radius, 0.0, 0.0, 1, { [group] = intensity }, { avatars = true } )
+		axon.generate_radial_stimulus( pos, radius, 0.0, 0.0, { [group] = intensity }, { avatars = true } )
 	end )
 	next_noise_id = next_noise_id + 1
 end
@@ -1412,11 +1501,11 @@ mobs.presets = {
 				local dist = vector.distance( self.pos, target_pos )
 
 				if self:get_direct_yaw_delta( target_pos ) < rad_30 and dist <= self.pickup_range then
-					if target:is_player( ) then
-						target:get_wielded_item( ):take_item( )
-						target:set_wielded_item( "" )
-					elseif target:get_entity_name( ) == "__builtin:item" then
-						target:remove( )
+					if target_obj:is_player( ) then
+						target_obj:get_wielded_item( ):take_item( )
+						target_obj:set_wielded_item( "" )
+					elseif target_obj:get_entity_name( ) == "__builtin:item" then
+						target_obj:remove( )
 					end
 					if can_eat then
 					--	minetest.sound_play( "hbhunger_eat_generic", {
