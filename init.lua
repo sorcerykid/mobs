@@ -492,6 +492,10 @@ mobs.register_mob = function ( name, def )
 			return abs( normalize_angle( yaw - self.yaw ) )
 		end,
 
+		get_target_distance = function ( self )
+			return vector.distance( self.pos, self.target.pos )
+		end,
+
 		-- collision processing --
 
 		get_pos_ahead = function ( self, outset, angle )
@@ -834,14 +838,14 @@ mobs.register_mob = function ( name, def )
 				end
 			end
 
+			local target_pos = self.target.pos
+			local dist = self:get_target_distance( )
+
 			if cycles % 2 == 0 then
 				if self:get_target_yaw_delta( ) > rad_45 or random( 5 ) == 1 then
 					self:turn_to( self:get_target_yaw( rad_20 ), 10 )
 				end
 			end
-
-			local target_pos = self.target.pos
-			local dist = vector.distance( self.pos, target_pos )
 
 			if dist <= self.follow_range then
 				if self.speed > 0 then
@@ -868,7 +872,7 @@ mobs.register_mob = function ( name, def )
 						if self.yield_level < 3 and self.move_result.collides_xz then
 							self.yield_level = self.yield_level + 1
 							self.object:set_velocity_vert( 5 )
-						elseif random( 2 ) == 1 then
+						elseif random( 5 ) == 1 then
 							self.object:set_velocity_vert( 5 )
 						end
 					end
@@ -879,9 +883,16 @@ mobs.register_mob = function ( name, def )
 		start_search_action = function ( self )
 			assert( self.target.pos )  -- sanity check
 
-			self:turn_to( self:get_target_yaw( rad_5 ), 10 )
-			self:set_speed( self.walk_velocity )
-			self:set_animation( "walk" )
+			local dist = self:get_target_distance( )
+
+			self:turn_to( self:get_target_yaw( rad_0 ), 20 )
+			if self:get_target_yaw_delta( ) > rad_10 or dist <= self.search_range then
+				self:set_speed( 0 )
+				self:set_animation( "stand" )
+			else
+				self:set_speed( self.sneak_velocity )
+				self:set_animation( "walk" )
+			end
 
 			self.timekeeper.clear( "hunger" )
 			self.timekeeper.start( 0.5, "action", self.on_search_action )
@@ -897,7 +908,7 @@ mobs.register_mob = function ( name, def )
 			end
 
 			local target_pos = self.target.pos
-			local dist = vector.distance( self.pos, target_pos )
+			local dist = self:get_target_distance( )
 
 			-- go to last known position of target and look around
 			if dist <= self.search_range then
@@ -907,31 +918,29 @@ mobs.register_mob = function ( name, def )
 				end
 
 				if random( 4 ) == 1 then
-					self:turn_to( self:get_random_yaw( rad_180 ), 20 )
+					self:turn_to( self:get_random_yaw( rad_180 ), 10 )
 				end
 			else
-				if self.speed == 0 then
-					self:set_speed( self.walk_velocity )
+				-- wait at least 2 seconds after turning to start walking
+				if self.speed == 0 and cycles >= 4 and random( 3 ) == 1 then
+					self:set_speed( self.sneak_velocity )
 					self:set_animation( "walk" )
+				end
 
-				else
-					if self.can_fly then
-						-- descend or ascend to slightly above player altitude, but prevent incessant bobbing
-						local v = 0
-						if target_pos.y + 2.5 > self.pos.y then
-							v = self.walk_velocity
-						elseif target_pos.y + 0.5 < self.pos.y then
-							v = -self.walk_velocity
-						end
-						self:set_velocity_vert( v )
+				if self.can_fly then
+					-- descend or ascend to slightly above player altitude, but prevent incessant bobbing
+					local v = 0
+					if target_pos.y + 2.5 > self.pos.y then
+						v = self.walk_velocity
+					elseif target_pos.y + 0.5 < self.pos.y then
+						v = -self.walk_velocity
+					end
+					self:set_velocity_vert( v )
 
-					elseif self.can_jump and self.move_result.is_standing then
-						if self.yield_level < 3 and self.move_result.collides_xz then
-							self.yield_level = self.yield_level + 1
-							self.object:set_velocity_vert( 5 )
-						elseif random( 2 ) == 1 then
-							self.object:set_velocity_vert( 5 )
-						end
+				elseif self.can_jump and self.move_result.is_standing then
+					if self.yield_level < 3 and self.move_result.collides_xz then
+						self.yield_level = self.yield_level + 1
+						self.object:set_velocity_vert( 5 )
 					end
 				end
 			end
@@ -940,7 +949,7 @@ mobs.register_mob = function ( name, def )
 		start_escape_action = function ( self )
 			assert( self.target.pos )  -- sanity check
 
-			local dist = vector.distance( self.pos, self.target.pos )
+			local dist = self:get_target_distance( )
 			if self:get_target_yaw_delta( ) < rad_60 and dist <= self.escape_range then
 				-- recoil if facing intruder
 				self:set_speed( -self.recoil_velocity )
@@ -978,7 +987,7 @@ mobs.register_mob = function ( name, def )
 			end
 
 			local target_pos = self.target.pos
-			local dist = vector.distance( self.pos, target_pos )
+			local dist = self:get_target_distance( )
 
 			if dist <= self.escape_range then
 				-- if close, keep backtracking
@@ -1053,7 +1062,7 @@ mobs.register_mob = function ( name, def )
 			end
 
 			local target_pos = self.target.pos
-			local dist = vector.distance( self.pos, target_pos )
+			local dist = self:get_target_distance( )
 
 			self:turn_to( self:get_target_yaw( rad_0 ), 5 )
 
@@ -1588,11 +1597,11 @@ mobs.presets = {
 							texture = "heart.png",
 						} )
 					end
-					return nil
+					return "ignore"
 				end
 			end
 
-			return random( wait_chance ) == 1 and "follow" or nil
+			return random( wait_chance ) == 1 and "follow" or "ignore"
 		end
 	end,
 }
