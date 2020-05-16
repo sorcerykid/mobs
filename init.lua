@@ -51,6 +51,7 @@ local rad_0 = 0
 
 function Timekeeper( this )
 	local timer_defs = { }
+	local pending_timer_defs = { }
 	local clock = 0.0
 	local delay = 0.0
 	local self = { }
@@ -64,21 +65,29 @@ function Timekeeper( this )
 	end
 
 	self.start = function ( period, name, func )
-		timer_defs[ name ] = { cycles = 0, period = period, expiry = clock + delay + period, started = clock, func = func }
+		timer_defs[ name ] = nil
+		pending_timer_defs[ name ] = { cycles = 0, period = period, expiry = clock + delay + period, started = clock, func = func }
 	end
 
 	self.start_now = function ( period, name, func )
+		timer_defs[ name ] = nil
 		if not func( this, 0, period, 0.0, 0.0 ) then
-			timer_defs[ name ] = { cycles = 0, period = period, expiry = clock + period, started = clock, func = func }
+			pending_timer_defs[ name ] = { cycles = 0, period = period, expiry = clock + period, started = clock, func = func }
 		end
 	end
 
 	self.clear = function ( name )
+		pending_timer_defs[ name ] = nil
 		timer_defs[ name ] = nil
 	end
 
 	self.on_step = function ( dtime )
 		clock = clock + dtime
+
+		for k, v in pairs( pending_timer_defs ) do
+			timer_defs[ k ] = v
+			pending_timer_defs[ k ] = nil
+		end
 
 		local timers = { }
 		for k, v in pairs( timer_defs ) do
@@ -679,7 +688,7 @@ mobs.register_mob = function ( name, def )
 
 		-- alertness and awareness functions --
 
-		start_awareness = function ( self, target )
+		start_awareness = function ( self )
 			local awareness = self.awareness_stages[ self.state ]
 
 			if awareness then
