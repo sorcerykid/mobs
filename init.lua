@@ -1322,6 +1322,10 @@ mobs.register_mob = function ( name, def )
 				attack = self.start_attack_action,
 			}
 
+			self.watch_players = table.copy( self.watch_players )
+			self.watch_spawnitems = table.copy( self.watch_spawnitems )
+			self.watch_wielditems = table.copy( self.watch_wielditems )
+
 			if staticdata then
 				local tmp = minetest.deserialize( staticdata )
 				if tmp and tmp.lifetimer then
