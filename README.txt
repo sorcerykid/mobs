@@ -1,4 +1,4 @@
-Mobs Lite Mod v1.4
+Mobs Lite Mod v1.5
 By Leslie E. Krause
 
 Mobs Lite is a fully-working proof of concept for the Extended Motion Mechanics API for

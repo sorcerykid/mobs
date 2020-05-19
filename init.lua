@@ -428,7 +428,9 @@ mobs.register_mob = function ( name, def )
 		shoot_count = 0,
 		timeout = def.timeout,
 		neutral_state = "ignore",
-		defense_state = def.type == "monster" and "attack" or "ignore",	
+		offense_state = def.offense_state or def.type == "monster" and "attack" or "ignore",
+		defense_state = def.defense_state or def.type == "monster" and "attack" or "escape",
+		retreat_state = def.retreat_state or "escape",
 		is_tamed = false,
 		description = def.description,
 		after_activate = def.after_activate,
@@ -574,7 +576,7 @@ mobs.register_mob = function ( name, def )
 
 		check_suspect = function ( self, target_obj, clarity, elapsed )
 			-- default to defense or neutral state if not in any watch list
-			local suspect = random( 10 ) <= self.fear_factor and self.defense_state or self.neutral_state
+			local suspect = random( 10 ) <= self.fear_factor and self.offense_state or self.neutral_state
 			local entity = target_obj:get_luaentity( )
 
 			if not entity then
@@ -634,9 +636,9 @@ mobs.register_mob = function ( name, def )
 			-- when creating target it must be visible and evident!
 			if is_visible and is_evident then
 				if alertness and alertness.view_filter then
-					return alertness.view_filter( self, obj, clarity ), { obj = obj, pos = pos }
+					return alertness.view_filter( self, obj, clarity, 0.0 ), { obj = obj, pos = pos }
 				elseif clarity > 0.0 then
-					return self:check_suspect( obj, clarity ), { obj = obj, pos = pos }
+					return self:check_suspect( obj, clarity, 0.0 ), { obj = obj, pos = pos }
 				end
 			else
 				return self.state, self.target
@@ -657,11 +659,11 @@ mobs.register_mob = function ( name, def )
 				end
 
 				if alertness and alertness.view_filter then
-					return alertness.view_filter( self, self.target.obj, clarity )
+					return alertness.view_filter( self, self.target.obj, clarity, elapsed )
 				elseif clarity > 0.0 then
-					return self:check_suspect( self.target.obj, clarity, elapsed )
+					return self.awareness.pass_state or self:check_suspect( self.target.obj, clarity, elapsed )
 				else
-					return self.abort_state or self.neutral_state
+					return self.awareness.fail_state or self.neutral_state
 				end
 			end
 
@@ -676,7 +678,7 @@ mobs.register_mob = function ( name, def )
 			-- when not upset, seek out food or prey at random intervals
 			for obj in mobs.iterate_registry( self.pos, 30, 30, { players = true, spawnitems = true } ) do
 
-				if random( 10 ) <= self.fear_factor and obj:is_player( ) and not obj:get_attach( ) then
+				if random( 10 ) <= self.fear_factor and not obj:get_attach( ) then
 					local state, target = self:create_target( obj )
 					if state ~= self.state then
 						self:reset_alertness( state, target )
@@ -689,19 +691,13 @@ mobs.register_mob = function ( name, def )
 		-- alertness and awareness functions --
 
 		start_awareness = function ( self )
-			local awareness = self.awareness_stages[ self.state ]
+			self.awareness = self.awareness_stages[ self.state ] or { }
 
-			if awareness then
-				self.abort_state = awareness.abort_state
-				if awareness.decay > 0 then
-					self.timekeeper.start( awareness.decay, "awareness", function ( )
-						self:reset_alertness( self.abort_state, self.target )
-					end )
-				else
-					self.timekeeper.clear( "awareness" )
-				end
+			if self.awareness.decay and self.awareness.decay > 0 then
+				self.timekeeper.start( self.awareness.decay, "awareness", function ( )
+					self:reset_alertness( self.awareness.wait_state, self.target )
+				end )
 			else
-				self.abort_state = nil
 				self.timekeeper.clear( "awareness" )
 			end
 		end,
@@ -851,8 +847,8 @@ mobs.register_mob = function ( name, def )
 			local dist = self:get_target_distance( )
 
 			if cycles % 2 == 0 then
-				if self:get_target_yaw_delta( ) > rad_45 or random( 5 ) == 1 then
-					self:turn_to( self:get_target_yaw( rad_20 ), 10 )
+				if self:get_target_yaw_delta( ) > rad_45 or random( 3 ) == 1 then
+					self:turn_to( self:get_target_yaw( rad_20 ), 15 )
 				end
 			end
 
@@ -1307,9 +1303,7 @@ mobs.register_mob = function ( name, def )
 			self:set_velocity_vert( 0 )
 			self:set_yaw( random( ) * rad_360 )
 
-			self.aware_level = 0
 			self.yield_level = 0
-			self.awareness = { certainty = self.certainty, sensitivity = self.sensitivity }
 			self.move_result = { collides_xz = false, collides_y = true, is_standing = true }
 			self.pos = self.object:get_pos( )
 
@@ -1413,9 +1407,9 @@ mobs.register_mob = function ( name, def )
 				end
 
 				if hp - damage <= self.hp_low then
-					self:reset_alertness( "escape", { obj = hitter, pos = hitter:get_pos( ) } )
-				elseif self.type == "monster" then
-					self:reset_alertness( "attack", { obj = hitter, pos = hitter:get_pos( ) } )
+					self:reset_alertness( self.retreat_state, { obj = hitter, pos = hitter:get_pos( ) } )
+				else
+					self:reset_alertness( self.defense_state, { obj = hitter, pos = hitter:get_pos( ) } )
 				end
 			end
 		end,
@@ -1610,11 +1604,11 @@ mobs.presets = {
 							texture = "heart.png",
 						} )
 					end
-					return "ignore"
+					return self.neutral_state
 				end
 			end
 
-			return random( wait_chance ) == 1 and "follow" or "ignore"
+			return random( wait_chance ) == 1 and "follow" or self.offense_state
 		end
 	end,
 }
@@ -1652,3 +1646,4 @@ dofile( minetest.get_modpath( "mobs" ) .. "/animals.lua" )
 if not vector.origin then
 	dofile( minetest.get_modpath( "mobs" ) .. "/compatibility.lua" )
 end
+

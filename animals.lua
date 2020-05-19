@@ -25,25 +25,25 @@ mobs.register_mob( "mobs:kitten", {
 	y_offset = 0,
 	density = 0.5,
 
-	groups = { mob = 1, animal = 1, walks = 1, mobile = 1 },
 	textures = { "mobs_kitten.png" },
-
 	makes_footstep_sound = false,
 	makes_bloodshed_effect = true,
+
+	offense_state = "follow",
+	defense_state = "ignore",
+	retreat_state = "escape",
 
 	hunger_params = { offset = -0.5, spread = 2.5 },
 	alertness_states = {
 		ignore = { view_offset = 2, view_radius = 4, view_height = 4, view_acuity = 3 },
-		search = { view_offset = 2, view_radius = 10, view_height = 4, view_acuity = 3, view_filter = function ( self, obj, clarity )
-                        return clarity == 0.0 and "search" or "follow"
-                end },
+		search = { view_offset = 2, view_radius = 10, view_height = 4, view_acuity = 3 },
 		follow = { view_offset = 2, view_radius = 10, view_height = 4, view_acuity = 3 },
 		escape = { view_offset = 2, view_radius = 10, view_height = 4, view_acuity = 3 },
 	},
         awareness_stages = {
-                search = { decay = 12.0, abort_state = "ignore" },
-                follow = { decay = 0.0, abort_state = "search" },
-                escape = { decay = 12.0, abort_state = "ignore" },
+                search = { decay = 12.0, fail_state = "search", wait_state = "ignore" },
+                follow = { decay = 0.0, fail_state = "search" },
+                escape = { decay = 12.0, pass_state = "escape", fail_state = "escape", wait_state = "ignore" },
         },
 
 	certainty = 1.0,
@@ -73,7 +73,7 @@ mobs.register_mob( "mobs:kitten", {
 	watch_players = { },
 
 	hp_max = 4,
-	hp_low = 3,
+	hp_low = 2,
 	armor = 100,
 	light_damage = 0,
 	water_damage = 4,
@@ -129,33 +129,28 @@ mobs.register_mob( "mobs:rat", {
 	y_offset = 0,
 	density = 0.4,
 
-	groups = { mob = 1, animal = 1, walks = 1, mobile = 1 },
-	textures = {
-		"mobs_rat2.png", "mobs_rat2.png"
-	},
-
+	textures = { "mobs_rat2.png", "mobs_rat2.png" },
 	makes_footstep_sound = false,
 	makes_bloodshed_effect = true,
+
+	offense_state = "escape",
+	defense_state = "escape",
+	retreat_state = "escape",
 
 	hunger_params = { offset = 0.0, spread = 2.5 },
 	alertness_states = {
 		ignore = { view_offset = 0, view_radius = 3, view_height = 3, view_acuity = 4 },
-		search = { view_offset = 0, view_radius = 6, view_height = 3, view_acuity = 6, view_filter = function ( self, obj, clarity )
-                        return clarity == 0.0 and "search" or "follow"
-                end },
 		follow = { view_offset = 0, view_radius = 6, view_height = 3, view_acuity = 6 },
 		escape = { view_offset = 0, view_radius = 6, view_height = 3, view_acuity = 6 },
 	},
         awareness_stages = {
-                search = { decay = 12.0, abort_state = "ignore" },
-                follow = { decay = 0.0, abort_state = "search" },
-                escape = { decay = 12.0, abort_state = "ignore" },
+                escape = { decay = 4.0, pass_state = "escape", fail_state = "escape", wait_state = "ignore" },
         },
 
 	certainty = 1.0,
 	sensitivity = 0.0,
 
-	fear_factor = 8,
+	fear_factor = 6,
 	flee_factor = 10,
 	sneak_velocity = 0.5,
 	walk_velocity = 0.5,
@@ -163,8 +158,8 @@ mobs.register_mob( "mobs:rat", {
 	recoil_velocity = 0.5,
 	run_velocity = 1.2,
 	search_range = 2.0,
-	follow_range = 2.0,
-	pickup_range = 2.0,
+	follow_range = 2.5,
+	pickup_range = 2.5,
 	escape_range = 0.0,
 	can_jump = false,
 	can_walk = true,
@@ -174,7 +169,7 @@ mobs.register_mob( "mobs:rat", {
 		["mobs:meat"] = "follow",
 	},
 	watch_spawnitems = {
-		["mobs:meat"] = mobs.presets.grab_handout { can_eat = true, grab_chance = 2, wait_chance = 4 },
+		["mobs:meat"] = mobs.presets.grab_handout { can_eat = true, grab_chance = 2, wait_chance = 1 },
 	},
 	watch_players = { },
 
@@ -225,29 +220,26 @@ mobs.register_mob( "mobs:hare", {
 	y_offset = 0,
 	density = 0.6,
 
-	groups = { mob = 1, animal = 1, walks = 1, jumps = 1, mobile = 1, herbivore = 1 },
 	textures = { "mobs_bunny_grey.png" },
-
 	makes_footstep_sound = false,
 	makes_bloodshed_effect = true,
 
+	offense_state = "escape",
+	defense_state = "escape",
+	retreat_state = "escape",
+
 	hunger_params = { offset = 0.0, spread = 2.0 },
 	alertness_states = {
-		ignore = { view_offset = 0, view_radius = 2, view_height = 6, view_acuity = 0 },
-		search = { view_offset = 0, view_radius = 12, view_height = 6, view_acuity = 3, view_filter = function ( self, obj, clarity )
-                        return clarity == 0.0 and "search" or "follow"
-                end },
-		follow = { view_offset = 0, view_radius = 12, view_height = 6, view_acuity = 3 },
-		escape = { view_offset = 0, view_radius = 12, view_height = 6, view_acuity = 3 },
+		ignore = { view_offset = 2, view_radius = 8, view_height = 6, view_acuity = 0 },
+		follow = { view_offset = 2, view_radius = 12, view_height = 6, view_acuity = 3 },
+		escape = { view_offset = 2, view_radius = 12, view_height = 6, view_acuity = 3 },
 	},
         awareness_stages = {
-                search = { decay = 12.0, abort_state = "ignore" },
-                follow = { decay = 0.0, abort_state = "search" },
-                escape = { decay = 12.0, abort_state = "ignore" },
+                escape = { decay = 8.0, pass_state = "escape", fail_state = "escape", wait_state = "ignore" },
         },
 
 	certainty = 1.0,
-	sensitivity = 0.5,
+	sensitivity = 0.0,
 
 	fear_factor = 6,
 	flee_factor = 10,
@@ -257,8 +249,8 @@ mobs.register_mob( "mobs:hare", {
 	recoil_velocity = 2.0,
 	run_velocity = 3.5,
 	search_range = 3.0,
-	follow_range = 3.0,
-	pickup_range = 2.0,
+	follow_range = 2.5,
+	pickup_range = 2.5,
 	escape_range = 3.0,
 	can_jump = true,
 	can_walk = true,
@@ -268,7 +260,7 @@ mobs.register_mob( "mobs:hare", {
 		["default:apple"] =  "follow",
 	},
 	watch_spawnitems = {
-		["default:apple"] = mobs.presets.grab_handout { can_eat = true, grab_chance = 2, wait_chance = 5 },
+		["default:apple"] = mobs.presets.grab_handout { can_eat = true, grab_chance = 2, wait_chance = 1 },
 	},
 	watch_players = { },
 
@@ -327,28 +319,26 @@ mobs.register_mob( "mobs:chicken", {
 	y_offset = 3,
 	density = 0.4,
 
-	groups = { mob = 1, animal = 1, walks = 1, jumps = 1, mobile = 1, herbivore = 1 },
 	textures = {
 		"mobs_chicken.png", "mobs_chicken.png", "mobs_chicken.png", "mobs_chicken.png",
 		"mobs_chicken.png", "mobs_chicken.png", "mobs_chicken.png", "mobs_chicken.png", "mobs_chicken.png",
 	},
-
 	makes_footstep_sound = true,
 	makes_bloodshed_effect = true,
+
+	offense_state = "follow",
+	defense_state = "escape",
+	retreat_state = "escape",
 
 	hunger_params = { offset = 0.0, spread = 2.0 },
 	alertness_states = {
 		ignore = { view_offset = 2, view_radius = 4, view_height = 4, view_acuity = 0 },
-		search = { view_offset = 2, view_radius = 6, view_height = 4, view_acuity = 2, view_filter = function ( self, obj, clarity )
-                        return clarity == 0.0 and "search" or "follow"
-                end },
+		search = { view_offset = 2, view_radius = 6, view_height = 4, view_acuity = 2 },
 		follow = { view_offset = 2, view_radius = 6, view_height = 4, view_acuity = 2 },
 		escape = { view_offset = 2, view_radius = 6, view_height = 4, view_acuity = 2 },
 	},
         awareness_stages = {
-                search = { decay = 12.0, abort_state = "ignore" },
-                follow = { decay = 0.0, abort_state = "search" },
-                escape = { decay = 12.0, abort_state = "ignore" },
+                escape = { decay = 12.0, pass_state = "escape", fail_state = "ignore", wait_state = "ignore" },
         },
 
 	certainty = 1.0,
@@ -362,7 +352,7 @@ mobs.register_mob( "mobs:chicken", {
 	recoil_velocity = 2.0,
 	run_velocity = 2.0,
 	search_range = 3.0,
-	follow_range = 3.0,
+	follow_range = 2.0,
 	pickup_range = 2.0,
 	escape_range = 3.0,
 	can_jump = true,

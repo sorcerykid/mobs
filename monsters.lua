@@ -34,17 +34,12 @@ mobs.register_mob( "mobs:ghost", {
 	hunger_params = { offset = -0.1, spread = 3.0 },
 	alertness_states = {
 		ignore = { view_offset = 2, view_radius = 8, view_height = 8, view_acuity = 0 },
-		search = { view_offset = 2, view_radius = 14, view_height = 8, view_acuity = 3, view_filter =  function ( self, obj, clarity )
-			return clarity == 0.0 and "search" or "attack"
-		end },
-		attack = { view_offset = 2, view_radius = 14, view_height = 8, view_acuity = 3 , view_filter =  function ( self, obj, clarity )
-			return clarity == 0.0 and "search" or "attack"
-		end },
+		attack = { view_offset = 2, view_radius = 14, view_height = 8, view_acuity = 3 },
 		escape = { view_offset = 2, view_radius = 14, view_height = 8, view_acuity = 3 },
 	},
 	awareness_stages = {
-		attack = { decay = 15.0, abort_state = "ignore" },
-		escape = { decay = 10.0, abort_state = "ignore" },
+                attack = { decay = 0.0, pass_state = "attack", fail_state = "ignore" },
+                escape = { decay = 12.0, pass_state = "escape", fail_state = "escape", wait_state = "ignore" },
 	},
 
 	certainty = 1.0,
@@ -65,8 +60,6 @@ mobs.register_mob( "mobs:ghost", {
 	can_jump = true,
 	can_fly = true,
 	can_walk = false,
-
-	watch_players = { },
 
 	hunger = 5,
 	hp_max = 10,
@@ -139,28 +132,17 @@ mobs.register_mob( "mobs:spider", {
 		textures = { "mobs_spider_gib.png" }
 	},
 
-	gibbage_params = {
-		pieces = { "teeny", "teeny" },
-		sound = "mobs_gib_chunky",
-		damage_groups = { blast_stim = 3 },
-		textures = { "mobs_paniki_gib.png" }
-	},
-
 	hunger_params = { offset = 0.3, spread = 4.0 },
 	alertness_states = {
 		ignore = { view_offset = 6, view_radius = 6, view_height = 6, view_acuity = 3 },
-		search = { view_offset = 6, view_radius = 12, view_height = 6, view_acuity = 5, view_filter =  function ( self, obj, clarity )
-			return clarity == 0.0 and "search" or "attack"
-		end },
-		attack = { view_offset = 6, view_radius = 12, view_height = 6, view_acuity = 5, view_filter =  function ( self, obj, clarity )
-			return clarity == 0.0 and "search" or "attack"
-		end },
+		search = { view_offset = 6, view_radius = 12, view_height = 6, view_acuity = 5 },
+		attack = { view_offset = 6, view_radius = 12, view_height = 6, view_acuity = 5 },
 		escape = { view_offset = 6, view_radius = 12, view_height = 6, view_acuity = 5 },
 	},
 	awareness_stages = {
-		search = { decay = 18.0, abort_state = "ignore" },
-		attack = { decay = 0.0, abort_state = "search" },
-		escape = { decay = 18.0, abort_state = "ignore" },
+                search = { decay = 18.0, pass_state = "attack", fail_state = "search", wait_state = "ignore" },
+                attack = { decay = 0.0, pass_state = "attack", fail_state = "search" },
+                escape = { decay = 18.0, pass_state = "escape", fail_state = "escape", wait_state = "ignore" },
 	},
 
 	certainty = 1.0,
@@ -179,8 +161,6 @@ mobs.register_mob( "mobs:spider", {
 	run_velocity = 3.0,
 	can_walk = true,
 	can_jump = true,
-
-	watch_players = { },
 
 	hunger = 6,
 	hp_max = 16,
@@ -252,21 +232,24 @@ mobs.register_mob( "mobs:bat", {
 	makes_footstep_sound = false,
 	makes_bloodshed_effect = true,
 
+	gibbage_params = {
+		pieces = { "teeny", "teeny" },
+		sound = "mobs_gib_chunky",
+		damage_groups = { blast_stim = 3 },
+		textures = { "mobs_paniki_gib.png" }
+	},
+
 	hunger_params = { offset = 1.0, spread = 1.0 },
 	alertness_states = {
 		ignore = { view_offset = 10, view_radius = 15, view_height = 15, view_acuity = 3 },
-		search = { view_offset = 10, view_radius = 20, view_height = 15, view_acuity = 5, view_filter =  function ( self, obj, clarity )
-			return clarity == 0.0 and "search" or "attack"
-		end },
-		attack = { view_offset = 10, view_radius = 20, view_height = 15, view_acuity = 5, view_filter =  function ( self, obj, clarity )
-			return clarity == 0.0 and "search" or "attack"
-		end },
+		search = { view_offset = 10, view_radius = 20, view_height = 15, view_acuity = 5 },
+		attack = { view_offset = 10, view_radius = 20, view_height = 15, view_acuity = 5 },
 		escape = { view_offset = 10, view_radius = 20, view_height = 15, view_acuity = 3 },
 	},
 	awareness_stages = {
-		search = { decay = 14.0, abort_state = "ignore" },
-		attack = { decay = 0.0, abort_state = "search" },
-		escape = { decay = 14.0, abort_state = "ignore" },
+                search = { decay = 14.0, pass_state = "attack", fail_state = "search", wait_state = "ignore" },
+                attack = { decay = 0.0, pass_state = "attack", fail_state = "search" },
+                escape = { decay = 14.0, pass_state = "escape", fail_state = "escape", wait_state = "ignore" },
 	},
 
 	certainty = 1.0,
@@ -286,8 +269,6 @@ mobs.register_mob( "mobs:bat", {
 	can_jump = true,
 	can_fly = true,
 	can_walk = false,
-
-	watch_players = { },
 
 	hunger = 6,
 	hp_max = 8,
@@ -359,18 +340,14 @@ mobs.register_mob( "mobs:griefer_ghost", {
 	hunger_params = { offset = 0.3, spread = 6.0 },
 	alertness_states = {
 		ignore = { view_offset = 5, view_radius = 10, view_height = 8, view_acuity = 2 },
-		search = { view_offset = 5, view_radius = 20, view_height = 8, view_acuity = 2, view_filter =  function ( self, obj, clarity )
-			return clarity == 0.0 and "search" or "attack"
-		end },
-		attack = { view_offset = 5, view_radius = 20, view_height = 8, view_acuity = 2, view_filter =  function ( self, obj, clarity )
-			return clarity == 0.0 and "search" or "attack"
-		end },
+		search = { view_offset = 5, view_radius = 20, view_height = 8, view_acuity = 2 },
+		attack = { view_offset = 5, view_radius = 20, view_height = 8, view_acuity = 2 },
 		escape = { view_offset = 5, view_radius = 20, view_height = 8, view_acuity = 2 },
 	},
 	awareness_stages = {
-		search = { decay = 8.0, abort_state = "ignore" },
-		attack = { decay = 25.0, abort_state = "search" },
-		escape = { decay = 8.0, abort_state = "ignore" },
+                search = { decay = 20.0, pass_state = "attack", fail_state = "search", wait_state = "ignore" },
+                attack = { decay = 0.0, pass_state = "attack", fail_state = "search" },
+                escape = { decay = 10.0, pass_state = "escape", fail_state = "escape", wait_state = "ignore" },
 	},
 
 	certainty = 1.0,
@@ -389,8 +366,6 @@ mobs.register_mob( "mobs:griefer_ghost", {
 	run_velocity = 3.0,
 	can_jump = true,
 	can_walk = true,
-
-	watch_players = { },
 
 	hunger = 2,
 	hp_max = 12,
